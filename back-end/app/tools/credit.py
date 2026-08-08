@@ -1,12 +1,8 @@
 from datetime import datetime, timezone
-from pathlib import Path
 
 import pandas as pd
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-CLIENTES_CSV = DATA_DIR / "clientes.csv"
-SCORE_LIMITE_CSV = DATA_DIR / "score_limite.csv"
-SOLICITACOES_CSV = DATA_DIR / "solicitacoes_aumento_limite.csv"
+from app.config import CLIENTES_CSV, SCORE_LIMITE_CSV, SOLICITACOES_CSV
 
 
 def get_credit_limit(cpf: str) -> dict:

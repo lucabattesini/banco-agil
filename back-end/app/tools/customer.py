@@ -1,9 +1,6 @@
-from pathlib import Path
-
 import pandas as pd
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-CLIENTES_CSV = DATA_DIR / "clientes.csv"
+from app.config import CLIENTES_CSV
 
 
 def validate_customer(cpf: str, birth_date: str) -> dict:
