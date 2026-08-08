@@ -1,0 +1,8 @@
+pandas>=2.0
+fastapi>=0.110
+uvicorn>=0.29
+langgraph>=0.2
+langchain-core>=0.3
+langchain-google-genai>=2.0
+python-dotenv>=1.0
+streamlit>=1.35
