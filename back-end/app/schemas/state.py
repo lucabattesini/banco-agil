@@ -10,3 +10,5 @@ class GraphState(TypedDict):
     customer: Optional[Customer]
     auth_attempts: int
     current_agent: str
+    pending_cpf: Optional[str]
+    pending_birth_date: Optional[str]
