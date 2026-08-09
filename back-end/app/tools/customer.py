@@ -1,6 +1,14 @@
+from typing import Optional
+
 import pandas as pd
 
 from app.config import CLIENTES_CSV
+
+
+def find_customer_by_cpf(cpf: str) -> Optional[dict]:
+    df = pd.read_csv(CLIENTES_CSV, dtype={"cpf": str})
+    match = df[df["cpf"] == cpf]
+    return match.iloc[0].to_dict() if not match.empty else None
 
 
 def validate_customer(cpf: str, birth_date: str) -> dict:
