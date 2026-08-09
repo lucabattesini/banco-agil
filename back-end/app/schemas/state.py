@@ -1,6 +1,7 @@
-from typing import Annotated, Optional, TypedDict
+from typing import Annotated, NotRequired, Optional, TypedDict
 
 from langgraph.graph.message import add_messages
+from langgraph.managed.is_last_step import RemainingSteps
 
 from app.schemas.tables import Customer
 
@@ -13,3 +14,4 @@ class GraphState(TypedDict):
     pending_cpf: Optional[str]
     pending_birth_date: Optional[str]
     pending_requested_limit: Optional[float]
+    remaining_steps: NotRequired[RemainingSteps]

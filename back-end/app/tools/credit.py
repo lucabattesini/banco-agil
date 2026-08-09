@@ -17,6 +17,10 @@ def get_credit_limit(
     state: Annotated[GraphState, InjectedState],
     tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> Command:
+    """Look up the customer's current available credit limit.
+
+    cpf must be digits only (no dots or dashes). Only call for an already authenticated customer.
+    """
     df = pd.read_csv(CLIENTES_CSV, dtype={"cpf": str})
     match = df[df["cpf"] == cpf]
 
@@ -50,6 +54,11 @@ def check_score_eligibility(score: int, requested_limit: float) -> dict:
 
 
 def register_limit_increase_request(cpf: str, requested_limit: float) -> dict:
+    """Register a credit limit increase request and resolve it as approved or rejected based on the customer's score.
+
+    cpf must be digits only (no dots or dashes); requested_limit is a plain number in BRL.
+    This creates a permanent record — only call once, after the customer has clearly stated the desired new limit.
+    """
     customer = find_customer_by_cpf(cpf)
     if customer is None:
         return {"success": False, "error": "not_found"}
