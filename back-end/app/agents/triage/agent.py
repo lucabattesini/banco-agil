@@ -15,7 +15,7 @@ llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, google_api_key=GEMINI_API_KEY)
 
 def _triage_prompt(state: GraphState) -> list:
     system = build_triage_prompt(
-        auth_attempts=state["auth_attempts"],
+        auth_attempts=state.get("auth_attempts", 0),
         pending_cpf=state.get("pending_cpf"),
         pending_birth_date=state.get("pending_birth_date"),
     )

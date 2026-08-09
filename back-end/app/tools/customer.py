@@ -33,7 +33,7 @@ def validate_customer(
     if customer is None or str(customer["data_nascimento"]) != birth_date:
         return Command(
             update={
-                "auth_attempts": state["auth_attempts"] + 1,
+                "auth_attempts": state.get("auth_attempts", 0) + 1,
                 "messages": [ToolMessage(content="Autenticação falhou.", tool_call_id=tool_call_id)],
             }
         )
