@@ -15,6 +15,9 @@ def end_conversation(tool_call_id: Annotated[str, InjectedToolCallId]) -> Comman
     """
     return Command(
         goto=END,
-        update={"messages": [ToolMessage(content="Atendimento encerrado.", tool_call_id=tool_call_id)]},
+        update={
+            "conversation_ended": True,
+            "messages": [ToolMessage(content="Atendimento encerrado.", tool_call_id=tool_call_id)],
+        },
         graph=Command.PARENT,
     )

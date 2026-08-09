@@ -19,4 +19,5 @@ class GraphState(TypedDict):
     pending_expenses: Optional[float]
     pending_dependents: Optional[int]
     pending_has_debt: Optional[bool]
+    conversation_ended: bool
     remaining_steps: NotRequired[RemainingSteps]
