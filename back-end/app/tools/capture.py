@@ -40,3 +40,32 @@ def capture_requested_limit(
             "messages": [ToolMessage(content="Valor solicitado registrado.", tool_call_id=tool_call_id)],
         }
     )
+
+
+def capture_interview_data(
+    income: Optional[float] = None,
+    employment_type: Optional[str] = None,
+    expenses: Optional[float] = None,
+    dependents: Optional[int] = None,
+    has_debt: Optional[bool] = None,
+    *,
+    tool_call_id: Annotated[str, InjectedToolCallId],
+) -> Command:
+    """Store the customer's financial interview answers as they are provided, even if only some are known so far.
+
+    employment_type must be one of: "formal", "autônomo", "desempregado".
+    Call this as soon as any value is identified — do not wait until all five are known.
+    """
+    update = {"messages": [ToolMessage(content="Dado(s) da entrevista registrado(s).", tool_call_id=tool_call_id)]}
+    if income is not None:
+        update["pending_income"] = income
+    if employment_type is not None:
+        update["pending_employment_type"] = employment_type
+    if expenses is not None:
+        update["pending_expenses"] = expenses
+    if dependents is not None:
+        update["pending_dependents"] = dependents
+    if has_debt is not None:
+        update["pending_has_debt"] = has_debt
+
+    return Command(update=update)
