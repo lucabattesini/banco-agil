@@ -1,18 +1,45 @@
 from datetime import datetime, timezone
+from typing import Annotated
 
 import pandas as pd
+from langchain_core.messages import ToolMessage
+from langchain_core.tools import InjectedToolCallId
+from langgraph.prebuilt import InjectedState
+from langgraph.types import Command
 
 from app.config import CLIENTES_CSV, SCORE_LIMITE_CSV, SOLICITACOES_CSV
+from app.schemas.state import GraphState
+from app.tools.customer import find_customer_by_cpf
 
 
-def get_credit_limit(cpf: str) -> dict:
+def get_credit_limit(
+    cpf: str,
+    state: Annotated[GraphState, InjectedState],
+    tool_call_id: Annotated[str, InjectedToolCallId],
+) -> Command:
+    """Look up the customer's current available credit limit.
+
+    cpf must be digits only (no dots or dashes). Only call for an already authenticated customer.
+    """
     df = pd.read_csv(CLIENTES_CSV, dtype={"cpf": str})
     match = df[df["cpf"] == cpf]
 
     if match.empty:
-        return {"success": False, "error": "not_found"}
+        return Command(
+            update={"messages": [ToolMessage(content="Cliente não encontrado.", tool_call_id=tool_call_id)]}
+        )
 
-    return {"success": True, "limite_credito": float(match.iloc[0]["limite_credito"])}
+    limite_credito = float(match.iloc[0]["limite_credito"])
+    updated_customer = state["customer"].model_copy(update={"limite_credito": limite_credito})
+
+    return Command(
+        update={
+            "customer": updated_customer,
+            "messages": [
+                ToolMessage(content=f"Limite de crédito atual: {limite_credito}", tool_call_id=tool_call_id)
+            ],
+        }
+    )
 
 
 def check_score_eligibility(score: int, requested_limit: float) -> dict:
@@ -26,7 +53,19 @@ def check_score_eligibility(score: int, requested_limit: float) -> dict:
     return {"eligible": requested_limit <= limite_maximo, "limite_maximo": limite_maximo}
 
 
-def register_limit_increase_request(cpf: str, score: int, current_limit: float, requested_limit: float) -> dict:
+def register_limit_increase_request(cpf: str, requested_limit: float) -> dict:
+    """Register a credit limit increase request and resolve it as approved or rejected based on the customer's score.
+
+    cpf must be digits only (no dots or dashes); requested_limit is a plain number in BRL.
+    This creates a permanent record — only call once, after the customer has clearly stated the desired new limit.
+    """
+    customer = find_customer_by_cpf(cpf)
+    if customer is None:
+        return {"success": False, "error": "not_found"}
+
+    score = int(customer["score"])
+    current_limit = float(customer["limite_credito"])
+
     eligibility = check_score_eligibility(score, requested_limit)
     status = "aprovado" if eligibility["eligible"] else "rejeitado"
 
