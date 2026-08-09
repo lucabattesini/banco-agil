@@ -12,3 +12,4 @@ class GraphState(TypedDict):
     current_agent: str
     pending_cpf: Optional[str]
     pending_birth_date: Optional[str]
+    pending_requested_limit: Optional[float]
