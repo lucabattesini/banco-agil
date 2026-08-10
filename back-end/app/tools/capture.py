@@ -1,19 +1,20 @@
-from typing import Annotated, Optional
+from typing import Annotated, Literal, Optional
 
 from langchain_core.messages import ToolMessage
 from langchain_core.tools import InjectedToolCallId
 from langgraph.types import Command
 
+from app.validators import BirthDateField, CpfField, DependentsField, NonNegativeAmountField, PositiveAmountField
+
 
 def capture_auth_data(
-    cpf: Optional[str] = None,
-    birth_date: Optional[str] = None,
+    cpf: Optional[CpfField] = None,
+    birth_date: Optional[BirthDateField] = None,
     *,
     tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> Command:
     """Store the CPF and/or birth date as they are provided by the customer, even if only one is known so far.
 
-    cpf must be digits only (no dots or dashes); birth_date must be in YYYY-MM-DD format.
     Call this as soon as either value is identified — do not wait until both are known.
     """
     update = {"messages": [ToolMessage(content="Dado(s) registrado(s).", tool_call_id=tool_call_id)]}
@@ -26,7 +27,7 @@ def capture_auth_data(
 
 
 def capture_requested_limit(
-    requested_limit: float,
+    requested_limit: PositiveAmountField,
     *,
     tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> Command:
@@ -43,17 +44,16 @@ def capture_requested_limit(
 
 
 def capture_interview_data(
-    income: Optional[float] = None,
-    employment_type: Optional[str] = None,
-    expenses: Optional[float] = None,
-    dependents: Optional[int] = None,
+    income: Optional[NonNegativeAmountField] = None,
+    employment_type: Optional[Literal["formal", "autônomo", "desempregado"]] = None,
+    expenses: Optional[NonNegativeAmountField] = None,
+    dependents: Optional[DependentsField] = None,
     has_debt: Optional[bool] = None,
     *,
     tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> Command:
     """Store the customer's financial interview answers as they are provided, even if only some are known so far.
 
-    employment_type must be one of: "formal", "autônomo", "desempregado".
     Call this as soon as any value is identified — do not wait until all five are known.
     """
     update = {"messages": [ToolMessage(content="Dado(s) da entrevista registrado(s).", tool_call_id=tool_call_id)]}
