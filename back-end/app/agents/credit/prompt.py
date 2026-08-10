@@ -1,5 +1,6 @@
 from typing import Optional
 
+from app.errors import TOOL_ERROR_POLICY
 from app.schemas.tables import Customer
 
 
@@ -26,4 +27,6 @@ def build_credit_prompt(customer: Customer, pending_requested_limit: Optional[fl
 - Se o cliente pedir para encerrar a conversa a qualquer momento, chame `end_conversation`.
 - Mantenha um tom respeitoso e objetivo, evitando repetições desnecessárias.
 - Nunca revele detalhes técnicos internos (nomes de tools, erros de sistema, etc.) ao cliente.
+
+{TOOL_ERROR_POLICY}
 """

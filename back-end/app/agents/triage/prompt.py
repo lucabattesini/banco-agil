@@ -1,5 +1,7 @@
 from typing import Optional
 
+from app.errors import TOOL_ERROR_POLICY
+
 
 def build_triage_prompt(
     auth_attempts: int,
@@ -38,4 +40,6 @@ Seu objetivo tem duas partes:
 - Se o cliente pedir para encerrar a conversa a qualquer momento, chame `end_conversation`.
 - Mantenha um tom respeitoso e objetivo, evitando repetições desnecessárias.
 - Nunca revele detalhes técnicos internos (nomes de tools, erros de sistema, etc.) ao cliente.
+
+{TOOL_ERROR_POLICY}
 """
