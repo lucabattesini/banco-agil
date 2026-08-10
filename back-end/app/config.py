@@ -12,3 +12,5 @@ SOLICITACOES_CSV = DATA_DIR / "solicitacoes_aumento_limite.csv"
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL")
+
+FRONTEND_URL = os.getenv("FRONTEND_URL")
