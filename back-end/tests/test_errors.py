@@ -6,7 +6,7 @@ from langgraph.prebuilt.tool_node import ToolInvocationError
 from pydantic import BaseModel, Field, ValidationError
 
 from app.errors import InvalidInputError, handle_tool_errors
-from app.tools.customer import find_customer_by_cpf
+from app.tools.credit import get_credit_limit
 
 GENERIC_SYSTEM_ERROR_MESSAGE = (
     "[ERRO DE SISTEMA] Uma ferramenta interna falhou. Explique ao cliente, sem detalhes técnicos, "
@@ -53,12 +53,12 @@ def test_invalid_input_and_tool_invocation_errors_do_not_touch_error_csv(tmp_csv
 
 
 def test_generic_exception_returns_fixed_message_without_leaking_details(tmp_csvs, monkeypatch, caplog):
-    import app.tools.customer as customer_mod
+    import app.repositories.clientes_repository as clientes_repo
 
-    monkeypatch.setattr(customer_mod, "CLIENTES_CSV", tmp_csvs["clientes"].parent / "does_not_exist.csv")
+    monkeypatch.setattr(clientes_repo, "CLIENTES_CSV", tmp_csvs["clientes"].parent / "does_not_exist.csv")
 
     with pytest.raises(FileNotFoundError) as exc_info:
-        find_customer_by_cpf("11111111111")
+        get_credit_limit(cpf="11111111111", state={}, tool_call_id="test")
 
     with caplog.at_level(logging.ERROR):
         result = handle_tool_errors(exc_info.value)
@@ -70,18 +70,18 @@ def test_generic_exception_returns_fixed_message_without_leaking_details(tmp_csv
 
 
 def test_generic_exception_records_tool_name_and_details_in_error_csv(tmp_csvs, monkeypatch):
-    import app.tools.customer as customer_mod
+    import app.repositories.clientes_repository as clientes_repo
 
-    monkeypatch.setattr(customer_mod, "CLIENTES_CSV", tmp_csvs["clientes"].parent / "does_not_exist.csv")
+    monkeypatch.setattr(clientes_repo, "CLIENTES_CSV", tmp_csvs["clientes"].parent / "does_not_exist.csv")
 
     with pytest.raises(FileNotFoundError) as exc_info:
-        find_customer_by_cpf("11111111111")
+        get_credit_limit(cpf="11111111111", state={}, tool_call_id="test")
 
     handle_tool_errors(exc_info.value)
 
     df = pd.read_csv(tmp_csvs["erros_sistema"])
     assert len(df) == 1
     row = df.iloc[0]
-    assert row["tool"] == "find_customer_by_cpf"
+    assert row["tool"] == "get_credit_limit"
     assert row["exception_type"] == "FileNotFoundError"
     assert "does_not_exist" in row["message"]
