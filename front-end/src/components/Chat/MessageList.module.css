@@ -1,0 +1,16 @@
+.list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  background: #f8f9fc;
+}
+
+.empty {
+  margin: auto;
+  color: #8b8fa3;
+  font-size: 14px;
+  text-align: center;
+}
