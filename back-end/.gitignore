@@ -1,0 +1,7 @@
+clientes.csv
+score_limite.csv
+solicitacoes_aumento_limite.csv
+erros_sistema.csv
+
+__pycache__/
+*.pyc
