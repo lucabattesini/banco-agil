@@ -1,0 +1,11 @@
+.chat {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 760px;
+  height: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 4px 24px rgba(26, 29, 41, 0.08);
+}
