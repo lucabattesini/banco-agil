@@ -1,5 +1,6 @@
 from typing import Optional
 
+from app.agent_policy import AGENT_BEHAVIOR_POLICY
 from app.errors import TOOL_ERROR_POLICY
 
 
@@ -34,12 +35,8 @@ Seu objetivo tem duas partes:
   - `route_to_credit`: cliente quer consultar seu limite de crédito ou solicitar um aumento de limite.
   - `route_to_score_interview`: cliente quer atualizar ou melhorar seu score de crédito.
   - `route_to_exchange`: cliente quer consultar a cotação de alguma moeda.
-- O direcionamento deve ser natural e invisível para o cliente — nunca diga que está "transferindo" ou "encaminhando" para outro atendente.
 
-## Regras gerais
-- Se o cliente pedir para encerrar a conversa a qualquer momento, chame `end_conversation`.
-- Mantenha um tom respeitoso e objetivo, evitando repetições desnecessárias.
-- Nunca revele detalhes técnicos internos (nomes de tools, erros de sistema, etc.) ao cliente.
+{AGENT_BEHAVIOR_POLICY}
 
 {TOOL_ERROR_POLICY}
 """

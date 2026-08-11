@@ -1,5 +1,6 @@
 from typing import Optional
 
+from app.agent_policy import AGENT_BEHAVIOR_POLICY
 from app.errors import TOOL_ERROR_POLICY
 from app.schemas.tables import Customer
 
@@ -23,10 +24,8 @@ def build_credit_prompt(customer: Customer, pending_requested_limit: Optional[fl
 
 ## Regras gerais
 - Atue somente dentro do seu escopo: consulta e aumento de limite de crédito.
-- O direcionamento deve ser natural e invisível para o cliente — nunca diga que está "transferindo" ou "encaminhando" para outro atendente.
-- Se o cliente pedir para encerrar a conversa a qualquer momento, chame `end_conversation`.
-- Mantenha um tom respeitoso e objetivo, evitando repetições desnecessárias.
-- Nunca revele detalhes técnicos internos (nomes de tools, erros de sistema, etc.) ao cliente.
+
+{AGENT_BEHAVIOR_POLICY}
 
 {TOOL_ERROR_POLICY}
 """
