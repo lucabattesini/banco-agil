@@ -9,6 +9,7 @@ from langgraph.types import Command
 from app.config import CLIENTES_CSV
 from app.schemas.state import GraphState
 from app.schemas.tables import Customer
+from app.validators import BirthDateField, CpfField
 
 
 def find_customer_by_cpf(cpf: str) -> Optional[dict]:
@@ -18,14 +19,13 @@ def find_customer_by_cpf(cpf: str) -> Optional[dict]:
 
 
 def validate_customer(
-    cpf: str,
-    birth_date: str,
+    cpf: CpfField,
+    birth_date: BirthDateField,
     state: Annotated[GraphState, InjectedState],
     tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> Command:
     """Authenticate the customer by checking their CPF and birth date against the customer database.
 
-    cpf must be digits only (no dots or dashes); birth_date must be in YYYY-MM-DD format.
     Only call once both values are known. Each failed attempt is counted automatically.
     """
     customer = find_customer_by_cpf(cpf)
@@ -34,6 +34,8 @@ def validate_customer(
         return Command(
             update={
                 "auth_attempts": state.get("auth_attempts", 0) + 1,
+                "pending_cpf": None,
+                "pending_birth_date": None,
                 "messages": [ToolMessage(content="Autenticação falhou.", tool_call_id=tool_call_id)],
             }
         )

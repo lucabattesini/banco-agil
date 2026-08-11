@@ -1,9 +1,10 @@
 from langchain_core.messages import SystemMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langgraph.prebuilt import create_react_agent
+from langgraph.prebuilt import ToolNode, create_react_agent
 
 from app.agents.score_interview.prompt import build_score_interview_prompt
 from app.config import GEMINI_API_KEY, GEMINI_MODEL
+from app.errors import handle_tool_errors
 from app.schemas.state import GraphState
 from app.tools.capture import capture_interview_data
 from app.tools.handoffs import route_to_credit
@@ -27,12 +28,15 @@ def _score_interview_prompt(state: GraphState) -> list:
 
 score_interview_agent = create_react_agent(
     model=llm,
-    tools=[
-        capture_interview_data,
-        calculate_credit_score,
-        route_to_credit,
-        end_conversation,
-    ],
+    tools=ToolNode(
+        [
+            capture_interview_data,
+            calculate_credit_score,
+            route_to_credit,
+            end_conversation,
+        ],
+        handle_tool_errors=handle_tool_errors,
+    ),
     prompt=_score_interview_prompt,
     state_schema=GraphState,
 )

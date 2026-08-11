@@ -23,3 +23,10 @@ class LimitIncreaseRequest(BaseModel):
     limite_atual: float
     novo_limite_solicitado: float
     status_pedido: Literal["pendente", "aprovado", "rejeitado"]
+
+
+class SystemErrorLog(BaseModel):
+    timestamp: str
+    tool: str
+    exception_type: str
+    message: str

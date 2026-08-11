@@ -10,16 +10,17 @@ from langgraph.types import Command
 from app.config import CLIENTES_CSV, SCORE_LIMITE_CSV, SOLICITACOES_CSV
 from app.schemas.state import GraphState
 from app.tools.customer import find_customer_by_cpf
+from app.validators import CpfField, PositiveAmountField
 
 
 def get_credit_limit(
-    cpf: str,
+    cpf: CpfField,
     state: Annotated[GraphState, InjectedState],
     tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> Command:
     """Look up the customer's current available credit limit.
 
-    cpf must be digits only (no dots or dashes). Only call for an already authenticated customer.
+    Only call for an already authenticated customer.
     """
     df = pd.read_csv(CLIENTES_CSV, dtype={"cpf": str})
     match = df[df["cpf"] == cpf]
@@ -53,15 +54,20 @@ def check_score_eligibility(score: int, requested_limit: float) -> dict:
     return {"eligible": requested_limit <= limite_maximo, "limite_maximo": limite_maximo}
 
 
-def register_limit_increase_request(cpf: str, requested_limit: float) -> dict:
+def register_limit_increase_request(
+    cpf: CpfField,
+    requested_limit: PositiveAmountField,
+    tool_call_id: Annotated[str, InjectedToolCallId],
+) -> Command:
     """Register a credit limit increase request and resolve it as approved or rejected based on the customer's score.
 
-    cpf must be digits only (no dots or dashes); requested_limit is a plain number in BRL.
     This creates a permanent record — only call once, after the customer has clearly stated the desired new limit.
     """
     customer = find_customer_by_cpf(cpf)
     if customer is None:
-        return {"success": False, "error": "not_found"}
+        return Command(
+            update={"messages": [ToolMessage(content="Cliente não encontrado.", tool_call_id=tool_call_id)]}
+        )
 
     score = int(customer["score"])
     current_limit = float(customer["limite_credito"])
@@ -80,4 +86,13 @@ def register_limit_increase_request(cpf: str, requested_limit: float) -> dict:
     df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
     df.to_csv(SOLICITACOES_CSV, index=False)
 
-    return {"success": True, "status": status}
+    return Command(
+        update={
+            "messages": [
+                ToolMessage(
+                    content=f"Solicitação de aumento de limite para {requested_limit} registrada: {status}.",
+                    tool_call_id=tool_call_id,
+                )
+            ]
+        }
+    )

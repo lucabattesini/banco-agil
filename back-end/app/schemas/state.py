@@ -8,16 +8,16 @@ from app.schemas.tables import Customer
 
 class GraphState(TypedDict):
     messages: Annotated[list, add_messages]
-    customer: Optional[Customer]
-    auth_attempts: int
-    current_agent: str
-    pending_cpf: Optional[str]
-    pending_birth_date: Optional[str]
-    pending_requested_limit: Optional[float]
-    pending_income: Optional[float]
-    pending_employment_type: Optional[str]
-    pending_expenses: Optional[float]
-    pending_dependents: Optional[int]
-    pending_has_debt: Optional[bool]
-    conversation_ended: bool
+    customer: NotRequired[Optional[Customer]]
+    auth_attempts: NotRequired[int]
+    current_agent: NotRequired[str]
+    pending_cpf: NotRequired[Optional[str]]
+    pending_birth_date: NotRequired[Optional[str]]
+    pending_requested_limit: NotRequired[Optional[float]]
+    pending_income: NotRequired[Optional[float]]
+    pending_employment_type: NotRequired[Optional[str]]
+    pending_expenses: NotRequired[Optional[float]]
+    pending_dependents: NotRequired[Optional[int]]
+    pending_has_debt: NotRequired[Optional[bool]]
+    conversation_ended: NotRequired[bool]
     remaining_steps: NotRequired[RemainingSteps]
