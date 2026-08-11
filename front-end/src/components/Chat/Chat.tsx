@@ -8,7 +8,7 @@ import type { ChatMessage } from '../../types/chat'
 const TYPING_INDICATOR_DELAY_MS = 1000
 
 function Chat() {
-  const [sessionId] = useState(() => crypto.randomUUID())
+  const [sessionId, setSessionId] = useState(() => crypto.randomUUID())
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [showTypingIndicator, setShowTypingIndicator] = useState(false)
@@ -49,9 +49,24 @@ function Chat() {
     }
   }
 
+  function handleNewConversation() {
+    window.clearTimeout(typingTimeoutRef.current)
+    setMessages([])
+    setConversationEnded(false)
+    setShowTypingIndicator(false)
+    setIsLoading(false)
+    setSessionId(crypto.randomUUID())
+  }
+
   return (
     <div className={styles.chat}>
-      <MessageList messages={messages} isTyping={showTypingIndicator} />
+      <MessageList
+        messages={messages}
+        isTyping={showTypingIndicator}
+        onSuggestionSelect={handleSend}
+        conversationEnded={conversationEnded}
+        onNewConversation={handleNewConversation}
+      />
       <MessageInput
         onSend={handleSend}
         disabled={isLoading || conversationEnded}

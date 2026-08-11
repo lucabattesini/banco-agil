@@ -8,38 +8,52 @@
 
 .input {
   flex: 1;
-  padding: 12px 14px;
+  padding: 13px 18px;
   border: 1px solid #d5d8e3;
-  border-radius: 10px;
+  border-radius: 999px;
   font-size: 15px;
   outline: none;
+  background: #f8f9fc;
+  transition: border-color 0.15s, background-color 0.15s;
 }
 
 .input:focus {
-  border-color: #1d4ed8;
+  border-color: #4f46e5;
+  background: #fff;
 }
 
 .input:disabled {
   background: #f4f5f9;
+  color: #9297ac;
 }
 
 .button {
-  padding: 10px 20px;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
   border: none;
-  border-radius: 10px;
-  background: #1d4ed8;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4f46e5, #3b82f6);
   color: #fff;
-  font-size: 15px;
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);
 }
 
 .button:hover:not(:disabled) {
-  background: #1a41b8;
+  transform: translateY(-1px) scale(1.04);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.45);
+}
+
+.button:active:not(:disabled) {
+  transform: scale(0.96);
 }
 
 .button:disabled {
-  background: #b7c3e0;
+  background: #c7cce0;
   cursor: not-allowed;
+  box-shadow: none;
 }
