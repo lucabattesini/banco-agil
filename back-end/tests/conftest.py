@@ -1,10 +1,10 @@
 import pandas as pd
 import pytest
 
-import app.errors as errors_mod
-import app.tools.credit as credit_mod
-import app.tools.customer as customer_mod
-import app.tools.score as score_mod
+import app.repositories.clientes_repository as clientes_repo
+import app.repositories.erros_sistema_repository as erros_repo
+import app.repositories.score_limite_repository as score_limite_repo
+import app.repositories.solicitacoes_repository as solicitacoes_repo
 from app.schemas.tables import LimitIncreaseRequest, SystemErrorLog
 
 CUSTOMERS = [
@@ -33,12 +33,10 @@ def tmp_csvs(tmp_path, monkeypatch):
     pd.DataFrame(columns=list(LimitIncreaseRequest.model_fields.keys())).to_csv(solicitacoes_csv, index=False)
     pd.DataFrame(columns=list(SystemErrorLog.model_fields.keys())).to_csv(erros_csv, index=False)
 
-    monkeypatch.setattr(customer_mod, "CLIENTES_CSV", clientes_csv)
-    monkeypatch.setattr(credit_mod, "CLIENTES_CSV", clientes_csv)
-    monkeypatch.setattr(credit_mod, "SCORE_LIMITE_CSV", score_limite_csv)
-    monkeypatch.setattr(credit_mod, "SOLICITACOES_CSV", solicitacoes_csv)
-    monkeypatch.setattr(score_mod, "CLIENTES_CSV", clientes_csv)
-    monkeypatch.setattr(errors_mod, "ERROS_SISTEMA_CSV", erros_csv)
+    monkeypatch.setattr(clientes_repo, "CLIENTES_CSV", clientes_csv)
+    monkeypatch.setattr(score_limite_repo, "SCORE_LIMITE_CSV", score_limite_csv)
+    monkeypatch.setattr(solicitacoes_repo, "SOLICITACOES_CSV", solicitacoes_csv)
+    monkeypatch.setattr(erros_repo, "ERROS_SISTEMA_CSV", erros_csv)
 
     return {
         "clientes": clientes_csv,

@@ -3,12 +3,10 @@ import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 
-import pandas as pd
 from langgraph.prebuilt.tool_node import ToolInvocationError
 
-from app.config import ERROS_SISTEMA_CSV
+from app.repositories import erros_sistema_repository
 from app.schemas.tables import SystemErrorLog
-from db.migrate_csv import ensure_schema
 
 logger = logging.getLogger("banco_agil.tools")
 
@@ -34,14 +32,13 @@ def _extract_tool_name(e: Exception) -> str:
 
 def _save_system_error(e: Exception, tool: str) -> None:
     try:
-        ensure_schema(ERROS_SISTEMA_CSV, SystemErrorLog)
         row = SystemErrorLog(
             timestamp=datetime.now(timezone.utc).isoformat(),
             tool=tool,
             exception_type=type(e).__name__,
             message=str(e),
         )
-        pd.DataFrame([row.model_dump()]).to_csv(ERROS_SISTEMA_CSV, mode="a", header=False, index=False)
+        erros_sistema_repository.create(row)
     except Exception:
         logger.error("Falha ao gravar histórico de erros de sistema", exc_info=True)
 

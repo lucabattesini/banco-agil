@@ -1,12 +1,11 @@
 from typing import Annotated
 
-import pandas as pd
 from langchain_core.messages import ToolMessage
 from langchain_core.tools import InjectedToolCallId
 from langgraph.prebuilt import InjectedState
 from langgraph.types import Command
 
-from app.config import CLIENTES_CSV
+from app.repositories import clientes_repository
 from app.schemas.state import GraphState
 
 PESO_RENDA = 30
@@ -15,18 +14,6 @@ PESO_DEPENDENTES = {0: 100, 1: 80, 2: 60}
 PESO_DEPENDENTES_3_PLUS = 30
 PESO_DIVIDA_SIM = -100
 PESO_DIVIDA_NAO = 100
-
-
-def update_customer_score(cpf: str, new_score: int) -> dict:
-    df = pd.read_csv(CLIENTES_CSV, dtype={"cpf": str})
-
-    if cpf not in df["cpf"].values:
-        return {"success": False, "error": "not_found"}
-
-    df.loc[df["cpf"] == cpf, "score"] = new_score
-    df.to_csv(CLIENTES_CSV, index=False)
-
-    return {"success": True}
 
 
 def calculate_credit_score(
@@ -60,8 +47,8 @@ def calculate_credit_score(
     )
     new_score = int(max(0, min(1000, score)))
 
-    result = update_customer_score(state["customer"].cpf, new_score)
-    if not result["success"]:
+    success = clientes_repository.update_score(state["customer"].cpf, new_score)
+    if not success:
         return Command(
             update={"messages": [ToolMessage(content="Não foi possível salvar o novo score.", tool_call_id=tool_call_id)]}
         )

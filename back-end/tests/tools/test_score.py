@@ -1,26 +1,11 @@
-import pandas as pd
 import pytest
 
 from app.schemas.tables import Customer
-from app.tools.score import calculate_credit_score, update_customer_score
+from app.tools.score import calculate_credit_score
 
 _CUSTOMER = Customer(
     cpf="11111111111", nome="Ana Silva", data_nascimento="1990-05-12", score=750, limite_credito=5000.0
 )
-
-
-def test_update_customer_score_returns_not_found_for_unknown_cpf(tmp_csvs):
-    result = update_customer_score("99999999999", 900)
-
-    assert result == {"success": False, "error": "not_found"}
-
-
-def test_update_customer_score_persists_new_score(tmp_csvs):
-    result = update_customer_score("11111111111", 900)
-
-    assert result == {"success": True}
-    df = pd.read_csv(tmp_csvs["clientes"], dtype={"cpf": str})
-    assert int(df.loc[df["cpf"] == "11111111111", "score"].iloc[0]) == 900
 
 
 def test_calculate_credit_score_returns_incomplete_message_when_missing_data(tmp_csvs):

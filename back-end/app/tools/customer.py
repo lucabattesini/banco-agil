@@ -1,21 +1,13 @@
-from typing import Annotated, Optional
+from typing import Annotated
 
-import pandas as pd
 from langchain_core.messages import ToolMessage
 from langchain_core.tools import InjectedToolCallId
 from langgraph.prebuilt import InjectedState
 from langgraph.types import Command
 
-from app.config import CLIENTES_CSV
+from app.repositories import clientes_repository
 from app.schemas.state import GraphState
-from app.schemas.tables import Customer
 from app.validators import BirthDateField, CpfField
-
-
-def find_customer_by_cpf(cpf: str) -> Optional[dict]:
-    df = pd.read_csv(CLIENTES_CSV, dtype={"cpf": str})
-    match = df[df["cpf"] == cpf]
-    return match.iloc[0].to_dict() if not match.empty else None
 
 
 def validate_customer(
@@ -28,9 +20,9 @@ def validate_customer(
 
     Only call once both values are known. Each failed attempt is counted automatically.
     """
-    customer = find_customer_by_cpf(cpf)
+    customer = clientes_repository.find_by_cpf(cpf)
 
-    if customer is None or str(customer["data_nascimento"]) != birth_date:
+    if customer is None or customer.data_nascimento != birth_date:
         return Command(
             update={
                 "auth_attempts": state.get("auth_attempts", 0) + 1,
@@ -42,7 +34,7 @@ def validate_customer(
 
     return Command(
         update={
-            "customer": Customer(**customer),
+            "customer": customer,
             "messages": [ToolMessage(content="Cliente autenticado com sucesso.", tool_call_id=tool_call_id)],
         }
     )
