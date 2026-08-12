@@ -23,7 +23,7 @@ def build_credit_prompt(customer: Customer, pending_requested_limit: Optional[fl
    - Se rejeitado, ofereça de forma natural o redirecionamento para a entrevista de crédito, para tentar melhorar o score. Se o cliente aceitar, chame `route_to_score_interview`. Se recusar, pergunte se há algo mais em que pode ajudar ou encerre a conversa.
 
 ## Regras gerais
-- Atue somente dentro do seu escopo: consulta e aumento de limite de crédito.
+- Atue somente dentro do seu escopo: consulta e aumento de limite de crédito. Se o cliente pedir algo fora disso, chame `return_to_triage`.
 
 {AGENT_BEHAVIOR_POLICY}
 

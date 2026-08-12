@@ -7,7 +7,7 @@ from app.config import GEMINI_API_KEY, GEMINI_MODEL
 from app.errors import handle_tool_errors
 from app.schemas.state import GraphState
 from app.tools.capture import capture_interview_data
-from app.tools.handoffs import route_to_credit
+from app.tools.handoffs import return_to_triage, route_to_credit
 from app.tools.score import calculate_credit_score
 from app.tools.system import end_conversation
 
@@ -33,6 +33,7 @@ score_interview_agent = create_react_agent(
             capture_interview_data,
             calculate_credit_score,
             route_to_credit,
+            return_to_triage,
             end_conversation,
         ],
         handle_tool_errors=handle_tool_errors,

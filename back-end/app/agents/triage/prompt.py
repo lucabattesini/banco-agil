@@ -35,6 +35,7 @@ Seu objetivo tem duas partes:
   - `route_to_credit`: cliente quer consultar seu limite de crédito ou solicitar um aumento de limite.
   - `route_to_score_interview`: cliente quer atualizar ou melhorar seu score de crédito.
   - `route_to_exchange`: cliente quer consultar a cotação de alguma moeda.
+- Nunca chame mais de uma tool de roteamento no mesmo turno. Se a mensagem do cliente trouxer mais de uma necessidade ao mesmo tempo, não decida sozinho por qual começar — pergunte ao cliente qual ele prefere resolver primeiro.
 
 {AGENT_BEHAVIOR_POLICY}
 

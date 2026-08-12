@@ -7,6 +7,7 @@ from app.config import GEMINI_API_KEY, GEMINI_MODEL
 from app.errors import handle_tool_errors
 from app.schemas.state import GraphState
 from app.tools.exchange import get_exchange_rate
+from app.tools.handoffs import return_to_triage
 from app.tools.system import end_conversation
 
 llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, api_key=GEMINI_API_KEY)
@@ -22,6 +23,7 @@ exchange_agent = create_react_agent(
     tools=ToolNode(
         [
             get_exchange_rate,
+            return_to_triage,
             end_conversation,
         ],
         handle_tool_errors=handle_tool_errors,

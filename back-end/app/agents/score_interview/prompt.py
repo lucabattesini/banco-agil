@@ -41,7 +41,7 @@ def build_score_interview_prompt(
 5. Informe o cliente do novo score, e em seguida chame `route_to_credit` para retomar a análise de crédito com o score atualizado.
 
 ## Regras gerais
-- Atue somente dentro do seu escopo: entrevista financeira e recálculo de score.
+- Atue somente dentro do seu escopo: entrevista financeira e recálculo de score. Se o cliente pedir algo fora disso, chame `return_to_triage`.
 
 {AGENT_BEHAVIOR_POLICY}
 

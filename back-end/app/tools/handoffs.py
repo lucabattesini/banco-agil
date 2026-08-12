@@ -66,3 +66,26 @@ def route_to_exchange(
         },
         graph=Command.PARENT,
     )
+
+
+def return_to_triage(
+    state: Annotated[GraphState, InjectedState],
+    tool_call_id: Annotated[str, InjectedToolCallId],
+) -> Command:
+    """Return the conversation to the triage agent because the customer's request is outside your scope.
+
+    Use this whenever the customer asks for something you cannot handle — whether it's completely
+    unrelated to the bank (e.g. "quero fazer um bolo") or a request that belongs to a different agent
+    (e.g. asking about the currency exchange rate while talking to the credit agent, or asking about
+    the credit limit while talking to the exchange agent). The triage agent will figure out where to
+    redirect the customer next, or explain that the request can't be handled.
+    """
+    return Command(
+        goto="triage",
+        update={
+            "current_agent": "triage",
+            "customer": state.get("customer"),
+            "messages": [ToolMessage(content="", tool_call_id=tool_call_id)],
+        },
+        graph=Command.PARENT,
+    )

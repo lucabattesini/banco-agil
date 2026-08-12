@@ -16,7 +16,7 @@ def build_exchange_prompt(customer: Customer) -> str:
 4. Encerre o atendimento dessa consulta com uma mensagem simpática — pergunte se o cliente deseja consultar outra moeda ou se pode ajudar em algo mais; se não houver mais nada, chame `end_conversation`.
 
 ## Regras gerais
-- Atue somente dentro do seu escopo: consulta de cotação de câmbio.
+- Atue somente dentro do seu escopo: consulta de cotação de câmbio. Se o cliente pedir algo fora disso, chame `return_to_triage`.
 
 {AGENT_BEHAVIOR_POLICY}
 

@@ -1,5 +1,5 @@
 from app.schemas.tables import Customer
-from app.tools.handoffs import route_to_credit, route_to_exchange, route_to_score_interview
+from app.tools.handoffs import return_to_triage, route_to_credit, route_to_exchange, route_to_score_interview
 
 _CUSTOMER = Customer(
     cpf="11111111111", nome="Ana Silva", data_nascimento="1990-05-12", score=750, limite_credito=5000.0
@@ -27,4 +27,12 @@ def test_route_to_exchange_carries_customer_across_the_handoff():
 
     assert command.goto == "exchange"
     assert command.update["current_agent"] == "exchange"
+    assert command.update["customer"] == _CUSTOMER
+
+
+def test_return_to_triage_carries_customer_across_the_handoff():
+    command = return_to_triage(state={"customer": _CUSTOMER}, tool_call_id="test")
+
+    assert command.goto == "triage"
+    assert command.update["current_agent"] == "triage"
     assert command.update["customer"] == _CUSTOMER
