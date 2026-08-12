@@ -1,0 +1,21 @@
+services:
+  back-end:
+    build: ./back-end
+    env_file: ./back-end/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - banco_agil_data:/app/app/data
+
+  front-end:
+    build:
+      context: ./front-end
+      args:
+        VITE_API_URL: http://localhost:8000
+    ports:
+      - "5173:80"
+    depends_on:
+      - back-end
+
+volumes:
+  banco_agil_data:
