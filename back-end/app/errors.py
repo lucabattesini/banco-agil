@@ -18,8 +18,12 @@ class InvalidInputError(Exception):
     The message is safe to show the customer."""
 
 
+TOOL_ALTERNATIVES: dict[str, str] = {
+    "get_exchange_rate": "Sugira ao cliente consultar a cotação em bcb.gov.br (Banco Central) ou Google Finance enquanto isso.",
+}
+
 TOOL_ERROR_POLICY = """## Tratamento de erros de ferramentas
-- Se uma tool retornar uma mensagem começando com "[ERRO DE SISTEMA]": não tente a mesma tool de novo nesta rodada. Informe o cliente, sem revelar detalhes técnicos, que há uma instabilidade nessa funcionalidade específica, peça desculpas e sugira tentar novamente mais tarde.
+- Se uma tool retornar uma mensagem começando com "[ERRO DE SISTEMA]": não tente a mesma tool de novo nesta rodada. Informe o cliente, sem revelar detalhes técnicos, que há uma instabilidade nessa funcionalidade específica, peça desculpas e sugira tentar novamente mais tarde. Se a mensagem incluir uma sugestão de alternativa, repasse-a ao cliente com suas próprias palavras. Depois disso, continue o atendimento normalmente — pergunte se o cliente deseja tentar mais tarde ou se você pode ajudar em algo mais; não encerre a conversa automaticamente só por causa dessa falha.
 - Se uma tool retornar uma mensagem começando com "[ENTRADA INVÁLIDA]": se o dado incorreto foi você quem formulou (ex. formatação), corrija e tente novamente — no máximo uma vez. Se o dado veio do cliente, explique o problema a ele com clareza e peça a correção."""
 
 
@@ -55,7 +59,11 @@ def handle_tool_errors(e: Exception) -> str:
     tool_name = _extract_tool_name(e)
     logger.error("Falha inesperada na tool '%s'", tool_name, exc_info=True)
     _save_system_error(e, tool_name)
-    return (
+    message = (
         "[ERRO DE SISTEMA] Uma ferramenta interna falhou. Explique ao cliente, sem detalhes técnicos, "
         "que há uma instabilidade nesta funcionalidade e peça desculpas."
     )
+    alternative = TOOL_ALTERNATIVES.get(tool_name)
+    if alternative:
+        message += f" {alternative}"
+    return message
