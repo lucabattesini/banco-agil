@@ -3,14 +3,33 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 20px;
-  background: #f8f9fc;
+  gap: 14px;
+  padding: 24px;
+  background: linear-gradient(180deg, #f8f9ff 0%, #f1f3fb 100%);
+  scrollbar-width: thin;
+  scrollbar-color: #c7cce0 transparent;
+}
+
+.list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.list::-webkit-scrollbar-thumb {
+  background: #c7cce0;
+  border-radius: 3px;
+}
+
+.emptyState {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .empty {
-  margin: auto;
-  color: #8b8fa3;
+  color: #9297ac;
   font-size: 14px;
   text-align: center;
+  max-width: 260px;
+  line-height: 1.5;
 }

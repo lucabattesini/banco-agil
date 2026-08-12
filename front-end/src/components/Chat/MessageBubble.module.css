@@ -1,6 +1,9 @@
 .row {
   display: flex;
+  align-items: flex-end;
+  gap: 8px;
   width: 100%;
+  animation: rise 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .row[data-role='user'] {
@@ -13,29 +16,40 @@
 
 .bubble {
   max-width: 70%;
-  padding: 10px 14px;
-  border-radius: 12px;
+  padding: 11px 16px;
+  border-radius: 20px;
   white-space: pre-wrap;
   word-break: break-word;
-  line-height: 1.4;
+  line-height: 1.45;
   box-shadow: 0 1px 2px rgba(26, 29, 41, 0.06);
 }
 
 .user {
-  background: #1d4ed8;
+  background: linear-gradient(135deg, #3b82f6, #4f46e5);
   color: #fff;
-  border-bottom-right-radius: 4px;
+  border-bottom-right-radius: 6px;
 }
 
 .assistant {
   background: #fff;
   color: #17181c;
   border: 1px solid #e5e7f0;
-  border-bottom-left-radius: 4px;
+  border-bottom-left-radius: 6px;
 }
 
 .error {
   background: #fdecea;
   color: #7a271a;
   border: 1px solid #f5b5ac;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }

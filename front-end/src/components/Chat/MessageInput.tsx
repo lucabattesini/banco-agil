@@ -28,8 +28,15 @@ function MessageInput({ onSend, disabled, placeholder }: MessageInputProps) {
         disabled={disabled}
         placeholder={placeholder ?? 'Digite sua mensagem...'}
       />
-      <button className={styles.button} type="submit" disabled={disabled || !value.trim()}>
-        Enviar
+      <button
+        className={styles.button}
+        type="submit"
+        disabled={disabled || !value.trim()}
+        aria-label="Enviar mensagem"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 11.5L21 3L13.5 21L11 13.5L3 11.5Z" fill="currentColor" />
+        </svg>
       </button>
     </form>
   )
