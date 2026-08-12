@@ -7,3 +7,6 @@ BirthDateField = Annotated[str, Field(pattern=r"^\d{4}-\d{2}-\d{2}$", descriptio
 PositiveAmountField = Annotated[float, Field(gt=0, description="Plain number in BRL, greater than zero.")]
 NonNegativeAmountField = Annotated[float, Field(ge=0, description="Plain number in BRL, zero or greater.")]
 DependentsField = Annotated[int, Field(ge=0, description="Number of dependents, zero or greater.")]
+CurrencyCodeField = Annotated[
+    str, Field(pattern=r"^[A-Z]{3}$", description="3-letter ISO currency code, e.g. USD, EUR, GBP.")
+]
