@@ -1,12 +1,14 @@
 import logging
 
+import httpx
 import pandas as pd
 import pytest
 from langgraph.prebuilt.tool_node import ToolInvocationError
 from pydantic import BaseModel, Field, ValidationError
 
-from app.errors import InvalidInputError, handle_tool_errors
+from app.errors import TOOL_ALTERNATIVES, InvalidInputError, handle_tool_errors
 from app.tools.credit import get_credit_limit
+from app.tools.exchange import get_exchange_rate
 
 GENERIC_SYSTEM_ERROR_MESSAGE = (
     "[ERRO DE SISTEMA] Uma ferramenta interna falhou. Explique ao cliente, sem detalhes técnicos, "
@@ -67,6 +69,21 @@ def test_generic_exception_returns_fixed_message_without_leaking_details(tmp_csv
     assert "does_not_exist" not in result
     assert "FileNotFoundError" not in result
     assert any(r.levelname == "ERROR" for r in caplog.records)
+
+
+def test_generic_exception_appends_configured_alternative_when_present(tmp_csvs, monkeypatch, caplog):
+    def fake_get(*args, **kwargs):
+        raise httpx.ConnectError("boom")
+
+    monkeypatch.setattr(httpx, "get", fake_get)
+
+    with pytest.raises(httpx.ConnectError) as exc_info:
+        get_exchange_rate(currency="USD")
+
+    with caplog.at_level(logging.ERROR):
+        result = handle_tool_errors(exc_info.value)
+
+    assert result == f"{GENERIC_SYSTEM_ERROR_MESSAGE} {TOOL_ALTERNATIVES['get_exchange_rate']}"
 
 
 def test_generic_exception_records_tool_name_and_details_in_error_csv(tmp_csvs, monkeypatch):
