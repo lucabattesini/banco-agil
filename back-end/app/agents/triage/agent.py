@@ -1,17 +1,14 @@
 from langchain_core.messages import SystemMessage
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.prebuilt import ToolNode, create_react_agent
 
 from app.agents.triage.prompt import build_triage_prompt
-from app.config import GEMINI_API_KEY, GEMINI_MODEL
 from app.errors import handle_tool_errors
+from app.llm import llm
 from app.schemas.state import GraphState
 from app.tools.capture import capture_auth_data
 from app.tools.customer import validate_customer
 from app.tools.handoffs import route_to_credit, route_to_exchange, route_to_score_interview
 from app.tools.system import end_conversation
-
-llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, google_api_key=GEMINI_API_KEY)
 
 
 def _triage_prompt(state: GraphState) -> list:

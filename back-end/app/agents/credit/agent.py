@@ -1,17 +1,14 @@
 from langchain_core.messages import SystemMessage
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.prebuilt import ToolNode, create_react_agent
 
 from app.agents.credit.prompt import build_credit_prompt
-from app.config import GEMINI_API_KEY, GEMINI_MODEL
 from app.errors import handle_tool_errors
+from app.llm import llm
 from app.schemas.state import GraphState
 from app.tools.capture import capture_requested_limit
 from app.tools.credit import get_credit_limit, register_limit_increase_request
 from app.tools.handoffs import return_to_triage, route_to_score_interview
 from app.tools.system import end_conversation
-
-llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL, api_key=GEMINI_API_KEY)
 
 
 def _credit_prompt(state: GraphState) -> list:
