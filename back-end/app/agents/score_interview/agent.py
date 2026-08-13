@@ -12,8 +12,20 @@ from app.tools.system import end_conversation
 
 
 def _score_interview_prompt(state: GraphState) -> list:
+    print(f"[DEBUG _score_interview_prompt] credit_score_hops={state.get('credit_score_hops', 0)!r}")
     system = build_score_interview_prompt(customer=state["customer"])
     return [SystemMessage(content=system), *trim_history(state["messages"])]
+
+
+def _debug_post_model_hook(state: GraphState) -> dict:
+    last = state["messages"][-1]
+    print(
+        f"[DEBUG score_interview post_model_hook] type={type(last).__name__} "
+        f"content={getattr(last, 'content', None)!r} "
+        f"tool_calls={getattr(last, 'tool_calls', None)!r} "
+        f"usage_metadata={getattr(last, 'usage_metadata', None)!r}"
+    )
+    return {}
 
 
 score_interview_agent = create_react_agent(
@@ -28,4 +40,5 @@ score_interview_agent = create_react_agent(
     ),
     prompt=_score_interview_prompt,
     state_schema=GraphState,
+    post_model_hook=_debug_post_model_hook,
 )

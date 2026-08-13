@@ -13,6 +13,14 @@ _NOT_AUTHENTICATED_YET = (
     "`validate_customer` antes de redirecionar."
 )
 
+_MAX_CREDIT_SCORE_HOPS = 2
+_CREDIT_SCORE_LOOP_BLOCKED = (
+    "[REDIRECIONAMENTO BLOQUEADO] Crédito e Entrevista de Score já se alternaram demais nesta "
+    "rodada e não chegaram a uma conclusão. Não tente redirecionar de novo — explique ao cliente, "
+    "com clareza e educadamente, que não foi possível concluir automaticamente agora, e pergunte "
+    "se há algo mais em que você pode ajudar."
+)
+
 
 def route_to_credit(
     state: Annotated[GraphState, InjectedState],
@@ -24,11 +32,17 @@ def route_to_credit(
     if state.get("customer") is None:
         raise InvalidInputError(_NOT_AUTHENTICATED_YET)
 
+    hops = state.get("credit_score_hops", 0)
+    if hops >= _MAX_CREDIT_SCORE_HOPS:
+        raise InvalidInputError(_CREDIT_SCORE_LOOP_BLOCKED)
+
     return Command(
         goto="credit",
         update={
             "current_agent": "credit",
             "customer": state.get("customer"),
+            "credit_score_hops": hops + 1,
+            "score_reassessed": state.get("score_reassessed", False),
             "messages": [ToolMessage(content="", tool_call_id=tool_call_id)],
         },
         graph=Command.PARENT,
@@ -45,11 +59,16 @@ def route_to_score_interview(
     if state.get("customer") is None:
         raise InvalidInputError(_NOT_AUTHENTICATED_YET)
 
+    hops = state.get("credit_score_hops", 0)
+    if hops >= _MAX_CREDIT_SCORE_HOPS:
+        raise InvalidInputError(_CREDIT_SCORE_LOOP_BLOCKED)
+
     return Command(
         goto="score_interview",
         update={
             "current_agent": "score_interview",
             "customer": state.get("customer"),
+            "credit_score_hops": hops + 1,
             "messages": [ToolMessage(content="", tool_call_id=tool_call_id)],
         },
         graph=Command.PARENT,

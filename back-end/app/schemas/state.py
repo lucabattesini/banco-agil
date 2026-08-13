@@ -12,6 +12,8 @@ class GraphState(TypedDict):
     auth_attempts: NotRequired[int]
     current_agent: NotRequired[str]
     last_bounced_agent: NotRequired[Optional[str]]
+    credit_score_hops: NotRequired[int]
+    score_reassessed: NotRequired[bool]
     pending_cpf: NotRequired[Optional[str]]
     pending_birth_date: NotRequired[Optional[str]]
     pending_requested_limit: NotRequired[Optional[float]]

@@ -15,6 +15,7 @@ def test_route_to_credit_carries_customer_across_the_handoff():
     assert command.goto == "credit"
     assert command.update["current_agent"] == "credit"
     assert command.update["customer"] == _CUSTOMER
+    assert command.update["credit_score_hops"] == 1
 
 
 def test_route_to_score_interview_carries_customer_across_the_handoff():
@@ -23,6 +24,22 @@ def test_route_to_score_interview_carries_customer_across_the_handoff():
     assert command.goto == "score_interview"
     assert command.update["current_agent"] == "score_interview"
     assert command.update["customer"] == _CUSTOMER
+    assert command.update["credit_score_hops"] == 1
+
+
+@pytest.mark.parametrize("route", [route_to_credit, route_to_score_interview])
+def test_route_rejects_handoff_after_too_many_credit_score_hops(route):
+    with pytest.raises(InvalidInputError):
+        route(state={"customer": _CUSTOMER, "credit_score_hops": 2}, tool_call_id="test")
+
+
+def test_credit_score_cycle_allows_one_full_round_trip():
+    first = route_to_score_interview(state={"customer": _CUSTOMER}, tool_call_id="test")
+    hops_after_first = first.update["credit_score_hops"]
+
+    second = route_to_credit(state={"customer": _CUSTOMER, "credit_score_hops": hops_after_first}, tool_call_id="test")
+
+    assert second.update["credit_score_hops"] == 2
 
 
 def test_route_to_exchange_carries_customer_across_the_handoff():

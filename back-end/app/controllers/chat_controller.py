@@ -18,8 +18,12 @@ async def handle_chat_message(request: ChatRequest) -> ChatResponse:
     try:
         result = await asyncio.wait_for(
             graph.ainvoke(
-                {"messages": [HumanMessage(content=request.message)], "last_bounced_agent": None},
-                config={"configurable": {"thread_id": request.session_id}, "recursion_limit": 15},
+                {
+                    "messages": [HumanMessage(content=request.message)],
+                    "last_bounced_agent": None,
+                    "credit_score_hops": 0,
+                },
+                config={"configurable": {"thread_id": request.session_id}, "recursion_limit": 8},
             ),
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
