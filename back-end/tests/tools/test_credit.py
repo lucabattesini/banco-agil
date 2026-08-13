@@ -22,17 +22,22 @@ def test_check_score_eligibility_rejects_above_limit(tmp_csvs):
 
 
 def test_register_limit_increase_request_returns_not_found_message(tmp_csvs):
-    command = register_limit_increase_request(cpf="99999999999", requested_limit=1000.0, tool_call_id="test")
+    command = register_limit_increase_request(
+        cpf="99999999999", requested_limit=1000.0, state={"messages": []}, tool_call_id="test"
+    )
 
     assert command.update["messages"][0].content == "Cliente não encontrado."
 
 
 def test_register_limit_increase_request_approves_within_score_limit(tmp_csvs):
-    command = register_limit_increase_request(cpf="11111111111", requested_limit=5000.0, tool_call_id="test")
+    command = register_limit_increase_request(
+        cpf="11111111111", requested_limit=5000.0, state={"messages": []}, tool_call_id="test"
+    )
 
     message = command.update["messages"][0].content
     assert "aprovado" in message
     assert message.startswith("Solicitação de aumento de limite")
+    assert command.update["pending_limit_retry"] is None
 
     df = pd.read_csv(tmp_csvs["solicitacoes"])
     assert len(df) == 1
@@ -40,10 +45,13 @@ def test_register_limit_increase_request_approves_within_score_limit(tmp_csvs):
 
 
 def test_register_limit_increase_request_rejects_above_score_limit(tmp_csvs):
-    command = register_limit_increase_request(cpf="11111111111", requested_limit=7000.0, tool_call_id="test")
+    command = register_limit_increase_request(
+        cpf="11111111111", requested_limit=7000.0, state={"messages": []}, tool_call_id="test"
+    )
 
     message = command.update["messages"][0].content
     assert "rejeitado" in message
+    assert command.update["pending_limit_retry"] == 7000.0
 
     df = pd.read_csv(tmp_csvs["solicitacoes"])
     assert df.iloc[0]["status_pedido"] == "rejeitado"

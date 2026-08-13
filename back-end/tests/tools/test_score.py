@@ -55,4 +55,5 @@ def test_calculate_credit_score_formula(
     )
 
     assert command.update["customer"].score == expected_score
+    assert command.update["score_recalculated"] is True
     assert str(expected_score) in command.update["messages"][0].content
