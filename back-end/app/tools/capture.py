@@ -4,7 +4,7 @@ from langchain_core.messages import ToolMessage
 from langchain_core.tools import InjectedToolCallId
 from langgraph.types import Command
 
-from app.validators import BirthDateField, CpfField, DependentsField, NonNegativeAmountField, PositiveAmountField
+from app.schemas.validators import BirthDateField, CpfField, DependentsField, NonNegativeAmountField, PositiveAmountField
 
 
 def capture_auth_data(

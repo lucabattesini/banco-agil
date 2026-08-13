@@ -9,7 +9,7 @@ from langgraph.types import Command
 from app.repositories import clientes_repository, score_limite_repository, solicitacoes_repository
 from app.schemas.state import GraphState
 from app.schemas.tables import LimitIncreaseRequest
-from app.validators import CpfField, PositiveAmountField
+from app.schemas.validators import CpfField, PositiveAmountField
 
 
 def get_credit_limit(
