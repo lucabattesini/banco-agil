@@ -10,7 +10,7 @@ O Banco Ágil simula um atendimento bancário completo conduzido por IA: o clien
 
 ### Stack
 - **Orquestração de agentes**: LangGraph
-- **LLM**: Groq (modelos Llama/GPT-OSS via API compatível com OpenAI)
+- **LLM**: Google Gemini
 - **Back-end**: FastAPI
 - **Front-end**: React + TypeScript + Vite
 - **Dados**: arquivos CSV (sem banco de dados relacional), acessados por uma camada de repositórios
@@ -29,7 +29,7 @@ Cada agente é um subgrafo independente (`create_react_agent`), com seu próprio
 
 ### Orquestração e handoffs
 
-Um `StateGraph` pai registra os 4 agentes como nós; a entrada é decidida a cada turno por um roteador condicional que lê o estado (`current_agent`). Handoffs entre agentes acontecem via `Command(graph=Command.PARENT)`, que interrompe o subgrafo do agente atual e transfere o controle para outro nó do grafo pai, sempre passando pela Triagem quando o assunto sai do escopo do agente ativo (com exceção do ciclo Crédito⇄Entrevista de Crédito, que é direto e cíclico).
+Um `StateGraph` pai registra os 4 agentes como nós; toda mensagem do cliente entra sempre pela Triagem, mesmo no meio de um atendimento já em andamento com um especialista — ela decide, a cada turno, se a mensagem continua o atendimento atual (redirecionando de volta para o mesmo especialista) ou se é uma necessidade nova. Handoffs acontecem via `Command(graph=Command.PARENT)`, que transfere o controle para outro nó do grafo pai. A única exceção ao "sempre passa pela Triagem" é o ciclo Crédito⇄Entrevista de Crédito, que é uma continuação direta e intencional do mesmo atendimento (não uma correção de rota), então segue direto entre os dois sem voltar pela Triagem.
 
 ### Estado e dados
 
@@ -44,9 +44,10 @@ O acesso aos dados (clientes, faixas de score, solicitações de aumento, log de
 - **Normalização de dados em linguagem livre** — datas por extenso, valores abreviados ("5k"), CPF com pontuação: convertidos automaticamente para o formato esperado, sem pedir ao cliente para reescrever.
 - **Contagem de tentativas de autenticação** — controle de estado dedicado, com encerramento automático e amigável após a 3ª falha consecutiva.
 - **Redirecionamento implícito entre agentes** — troca de contexto preservando os dados do cliente já autenticado, sem o cliente perceber a transição.
-- **Guard contra loop de redirecionamento** — detecta quando o mesmo par de agentes fica se devolvendo a conversa repetidamente e interrompe o ciclo antes de esgotar tentativas.
+- **Teto estrutural contra loop de redirecionamento** — toda mensagem passa pela Triagem antes de qualquer especialista, então o número de saltos por turno é limitado por construção (no máximo Triagem + um especialista, com exceção do ciclo intencional Crédito⇄Entrevista) — não depende do modelo "decidir" parar de redirecionar.
 - **Resolução de escopo múltiplo** — quando o pedido mistura mais de um assunto, resolve a parte própria antes de escalar o resto, ou pergunta ao cliente qual prioridade em vez de decidir sozinho.
 - **Captura progressiva de dados, disponível mas desativada por padrão** — mecanismo para registrar dados parciais conforme informados ao longo da conversa (útil para fluxos longos ou modelos mais lentos); hoje trocado por captura direta (mais barato em chamadas ao modelo), mas o código permanece no projeto, pronto para reativar se necessário.
+- **Redirecionamento direto entre especialista e Triagem, implementado mas não oferecido a nenhum agente** — a tool `return_to_triage` (um especialista devolvendo a conversa direto, sem esperar a Triagem reprocessar a próxima mensagem) permanece implementada e testada, mas nenhum agente a recebe hoje — todo roteamento passa pela Triagem a cada mensagem (ver Desafios Enfrentados). Com mais tempo para refinar em que condições é seguro delegar sem reabrir risco de loop, é uma boa opção futura de otimização de tokens e tempo de resposta, evitando o hop extra pela Triagem quando o especialista já tem certeza de que o assunto saiu do próprio escopo.
 - **Otimização de custo de chamadas ao modelo** — histórico de mensagens limitado por tamanho, políticas de comportamento compartilhadas entre agentes em vez de duplicadas.
 - **Persistência de conversa por sessão** — estado da conversa mantido por identificador de sessão, permitindo retomar o atendimento entre mensagens.
 - **Camada de repositórios** — acesso aos CSVs isolado da lógica de negócio, facilitando troca futura por um banco de dados real.
@@ -59,15 +60,15 @@ O acesso aos dados (clientes, faixas de score, solicitações de aumento, log de
 
 **Condição de corrida em chamadas de tool paralelas.** Alguns modelos chamam várias tools na mesma resposta (ex.: capturar dado de autenticação, validar cliente e redirecionar, tudo de uma vez). Como o estado injetado em cada tool reflete o instante anterior ao lote inteiro, uma tool de redirecionamento podia "ver" o cliente ainda não autenticado mesmo que a validação tivesse acabado de acontecer na mesma resposta. Solução: as tools de redirecionamento passaram a rejeitar a chamada (erro de entrada inválida, tratável) se o cliente ainda não estiver autenticado no estado, em vez de assumir que a ordem de execução é confiável.
 
-**Loop de redirecionamento entre agentes.** Um pedido envolvendo mais de um assunto ao mesmo tempo podia gerar um ciclo: um agente devolve para a Triagem, que redireciona de volta, que devolve de novo. Resolvido com um mecanismo que rastreia qual foi o último agente a devolver o atendimento e bloqueia uma segunda devolução consecutiva do mesmo agente, entregando a instrução de parar diretamente na mensagem de retorno da tool — sem exigir nenhuma mudança na Triagem.
+**Loop de redirecionamento entre agentes.** Um pedido envolvendo mais de um assunto ao mesmo tempo podia gerar um ciclo: um agente devolve para a Triagem, que redireciona de volta, que devolve de novo. A primeira tentativa de correção rastreava qual foi o último agente a devolver o atendimento e bloqueava uma segunda devolução consecutiva do mesmo agente. Na prática, essa mensagem de bloqueio era endereçada a quem chamou a tool de devolução ("explique você ao cliente"), mas quem processava a mensagem em seguida era sempre a Triagem — o aviso nunca chegava a quem deveria agir nele, e o ciclo podia continuar até estourar o tempo limite da requisição. A causa raiz era estrutural, não só de prompt: a Triagem podia ser pulada inteiramente em turnos seguintes (entrada direta no último agente ativo), então ela nunca via a mensagem nova com contexto fresco para perceber que um assunto já tinha sido resolvido. A correção definitiva trocou o mecanismo de bloqueio por uma mudança de arquitetura: toda mensagem passa pela Triagem primeiro, sempre — ela decide se é continuação do atendimento atual ou algo novo, e os especialistas deixam de receber a tool de devolução direta (ela continua implementada e testada, só não é mais oferecida a nenhum agente — ver Funcionalidades Implementadas). Isso limita o número de saltos por turno a um teto fixo por construção, independente do que o modelo decidir.
 
-**Limites de taxa de provedores de LLM.** O free tier do provedor inicial (Gemini) se mostrou insuficiente (20 requisições/dia) para o volume de chamadas de um sistema multi-agente com tool-calling extensivo. Migrado para Groq, que oferece um free tier maior — mas com seus próprios limites por minuto e por dia, o que motivou uma rodada de otimização: histórico de mensagens limitado, textos de política e descrições de tools enxutos, e remoção de capturas intermediárias que custavam uma chamada extra ao modelo a cada dado informado.
+**Limites de taxa de provedores de LLM.** O free tier do Gemini se mostrou insuficiente (20 requisições/dia) para o volume de chamadas de um sistema multi-agente com tool-calling extensivo, o que motivou uma rodada de otimização independente do provedor: histórico de mensagens limitado, textos de política e descrições de tools enxutos, e remoção de capturas intermediárias que custavam uma chamada extra ao modelo a cada dado informado. Combinada ao mecanismo de fallback automático entre dois modelos (`gemini-3.5-flash` como principal, `gemini-3.5-flash-lite` como backup), essa otimização absorve picos de uso sem exigir troca de provedor.
 
-**Avaliação de modelos alternativos sob pressão de cota.** Três alternativas do mesmo provedor foram avaliadas na prática: uma apresentou um bug conhecido e documentado de formatação de tool-calling; outra, por ser um modelo bem menor, chegou a inventar dados de cliente para forçar uma chamada de tool. A escolha final priorizou o modelo com melhor aderência a schema de ferramentas, mesmo com cota diária mais restrita.
+**Avaliação de modelos alternativos sob pressão de cota.** Diferentes modelos foram avaliados na prática ao longo do projeto: alguns apresentaram bugs conhecidos e documentados de formatação de tool-calling; outros, por serem modelos bem menores, chegaram a inventar dados de cliente para forçar uma chamada de tool. A escolha final priorizou os modelos com melhor aderência a schema de ferramentas.
 
 ## Escolhas Técnicas e Justificativas
 
-- **Entrada direta no agente atual, com uma tool de return_to_triage pra transitar entre agentes quando necessário** — os agentes especialistas têm uma tool pra devolver a conversa à Triagem sempre que o assunto sai do próprio escopo, tornando possível o cliente "viajar" entre Crédito, Entrevista e Câmbio ao longo da mesma conversa, sem que seja necessário dar tools de navegação direta para os agentes especializados, ou que as requisições sempre passem pelo orquestrador. Passar pelo orquestrador em toda chamada não é necessário num sistema deste porte e custaria uma chamada extra ao modelo gastando mais tokens e mais latência, mesmo quando não é necessário identificar contexto.
+- **Toda mensagem sempre passa pela Triagem, mesmo em meio a um atendimento já em andamento** — cada mensagem custa uma chamada extra ao modelo (a decisão de roteamento) em troca de previsibilidade: no máximo Triagem + um especialista por turno, nunca mais. A alternativa (pular a Triagem quando o especialista já está "ativo", com os próprios especialistas devolvendo a conversa quando o assunto sai do escopo deles) foi tentada primeiro por ser mais barata, mas se mostrou frágil — abriu espaço pra loops de redirecionamento não determinísticos e pra respostas que ignoravam contexto já resolvido. Uma chamada previsível a mais por turno é mais barata na prática do que um atendimento que ocasionalmente trava tentando se redirecionar sozinho.
 - **Redirecionamentos sempre passando pela Triagem** (exceto o ciclo Crédito⇄Entrevista) — mantém a regra de que nenhum agente atua fora do próprio escopo, e centraliza a decisão de roteamento em um único lugar.
 - **Camada de repositórios** entre as tools e os arquivos CSV — isola a lógica de negócio do formato de armazenamento, facilitando uma futura migração para um banco de dados real.
 - **Validação centralizada via tipos Pydantic compartilhados**, em vez de checagens manuais espalhadas pelas tools.
@@ -83,7 +84,7 @@ O acesso aos dados (clientes, faixas de score, solicitações de aumento, log de
 ### Pré-requisitos
 - [Docker](https://www.docker.com/) e Docker Compose, **ou**
 - Python 3.12+ e Node.js 20+ (para rodar back-end e front-end manualmente)
-- Uma chave de API do [Groq](https://console.groq.com/) (gratuita)
+- Uma chave de API do [Google AI Studio](https://aistudio.google.com/apikey) para o Gemini (gratuita)
 
 ### Rodando com Docker
 
@@ -92,7 +93,7 @@ O acesso aos dados (clientes, faixas de score, solicitações de aumento, log de
    cp back-end/.env.example back-end/.env
    cp front-end/.env.example front-end/.env
    ```
-   Em `back-end/.env`, preencha `GROQ_API_KEY` com sua chave do Groq. `GROQ_MODEL` já vem com um valor recomendado (`llama-3.3-70b-versatile`).
+   Em `back-end/.env`, preencha `GEMINI_API_KEY` com sua chave do Gemini. `GEMINI_MODEL` e `GEMINI_FALLBACK_MODEL` já vêm com valores recomendados (`gemini-3.5-flash` e `gemini-3.5-flash-lite`).
 
 2. Na raiz do repositório:
    ```bash
@@ -121,9 +122,9 @@ npm run dev
 
 | Arquivo | Variável | Descrição |
 |---|---|---|
-| `back-end/.env` | `GROQ_API_KEY` | Chave de API do Groq |
-| `back-end/.env` | `GROQ_MODEL` | Modelo principal usado pelos agentes (ex.: `llama-3.3-70b-versatile`) |
-| `back-end/.env` | `GROQ_FALLBACK_MODEL` | Modelo acionado automaticamente se o principal falhar por limite de requisições ou timeout |
+| `back-end/.env` | `GEMINI_API_KEY` | Chave de API do Gemini |
+| `back-end/.env` | `GEMINI_MODEL` | Modelo principal usado pelos agentes (ex.: `gemini-3.5-flash`) |
+| `back-end/.env` | `GEMINI_FALLBACK_MODEL` | Modelo acionado automaticamente se o principal falhar por limite de requisições ou timeout (ex.: `gemini-3.5-flash-lite`) |
 | `back-end/.env` | `FRONTEND_URL` | Origem permitida no CORS (ex.: `http://localhost:5173`) |
 | `front-end/.env` | `VITE_API_URL` | URL do back-end (ex.: `http://localhost:8000`) |
 

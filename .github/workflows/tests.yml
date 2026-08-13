@@ -30,6 +30,6 @@ jobs:
 
       - run: pytest
         env:
-          GROQ_API_KEY: dummy-key
-          GROQ_MODEL: dummy-model
-          GROQ_FALLBACK_MODEL: dummy-fallback-model
+          GEMINI_API_KEY: dummy-key
+          GEMINI_MODEL: dummy-model
+          GEMINI_FALLBACK_MODEL: dummy-fallback-model
