@@ -29,3 +29,7 @@ jobs:
       - run: pip install -r requirements.txt
 
       - run: pytest
+        env:
+          GROQ_API_KEY: dummy-key
+          GROQ_MODEL: dummy-model
+          GROQ_FALLBACK_MODEL: dummy-fallback-model
