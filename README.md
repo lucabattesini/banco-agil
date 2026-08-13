@@ -50,10 +50,7 @@ O acesso aos dados (clientes, faixas de score, solicitações de aumento, log de
 - **Redirecionamento direto entre especialista e Triagem, implementado mas não oferecido a nenhum agente** — a tool `return_to_triage` permanece implementada e testada, mas nenhum agente a recebe: o roteamento é de mão única por design (ver Desafios Enfrentados). Fica pronta para uma futura revisão que queira reabrir esse caminho, desde que a lógica de `last_bounced_agent` seja reverificada contra loops de redirecionamento antes de ligá-la a algum agente.
 - **Otimização de custo de chamadas ao modelo** — histórico de mensagens limitado por tamanho, políticas de comportamento compartilhadas entre agentes em vez de duplicadas.
 - **Persistência de conversa por sessão** — estado da conversa mantido por identificador de sessão, permitindo retomar o atendimento entre mensagens.
-- **Camada de repositórios** — acesso aos CSVs isolado da lógica de negócio, facilitando troca futura por um banco de dados real.
 - **Registro estruturado de erros técnicos** — falhas inesperadas gravadas com timestamp, origem e tipo de exceção, sem expor detalhes técnicos ao cliente.
-- **Testes automatizados com execução em CI** — suíte cobrindo tools, validações e repositórios, rodando a cada pull request.
-- **Execução via container** — todo o sistema (back-end + front-end) sobe com um único comando.
 - **Recuperação automática de instabilidade do modelo de linguagem** — se o modelo principal falhar por limite de requisições ou demora excessiva, um modelo de backup assume a chamada automaticamente, sem o cliente perceber; se mesmo assim a resposta passar de 40 segundos no total, o atendimento informa uma instabilidade momentânea de forma amigável, em vez de deixar o cliente esperando indefinidamente ou ver um erro genérico.
 
 ## Desafios Enfrentados e Como Foram Resolvidos
@@ -74,7 +71,6 @@ O acesso aos dados (clientes, faixas de score, solicitações de aumento, log de
 - **Validação centralizada via tipos Pydantic compartilhados**, em vez de checagens manuais espalhadas pelas tools.
 - **Tratamento de erro em duas categorias com registro técnico em CSV** — atende diretamente o requisito de informar o cliente com clareza, oferecer alternativa quando possível, e registrar o erro para análise posterior.
 - **Captura progressiva de dados avaliada e desativada conscientemente**, mantendo o código-base disponível, porém desativada por decisão de custo, por cada captura intermediária custar uma chamada extra ao modelo, tornando inviável a implementação em um sistema usando modelos com cota free tyer.
-- **Execução via Docker Compose com CI no GitHub Actions** — maior facilidade para rodar o projeto e verificação automática da suíte de testes a cada PR
 - **Front-end em React em vez de Streamlit** — optei por uma interface de chat dedicada em React para uma experiência mais próxima de um atendimento real.
 - **AwesomeAPI para cotação de câmbio** — escolhida por não exigir chave de API/token reduzindo a chance de falhas ou incoerências em produção, pelo formato simples de requisição e resposta em JSON plano facilitanndo o parsing e pela velocidade de resposta observada nos testes.
 - **Modelo de linguagem de backup com troca automática e prazo de 40s por requisição** — em vez de só reagir a um erro com uma mensagem, o sistema tenta um segundo modelo automaticamente antes de desistir e, se mesmo após chamar o backup o sistema não retornar uma resposta em 40 segundos, o trabalho é cancelado e uma mensagem automática é enviada ao usuário.
