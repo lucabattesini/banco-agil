@@ -27,7 +27,7 @@ Cada agente é um subgrafo independente (`create_react_agent`), com seu próprio
 - **Entrevista de Crédito** — conduz uma entrevista financeira conversacional e recalcula o score do cliente.
 - **Câmbio** — consulta de cotação de moedas em tempo real via API externa.
 
-<img width="1684" height="986" alt="image" src="https://github.com/user-attachments/assets/471b310c-024b-46d5-83cd-ff7d81766abc" />
+<img width="1785" height="1040" alt="image" src="https://github.com/user-attachments/assets/3239325f-3445-4886-a3da-8affc493d4bf" />
 
 ### Orquestração e dados
 
@@ -56,6 +56,9 @@ O acesso aos dados (clientes, faixas de score, solicitações de aumento, log de
 
 ## Desafios Enfrentados e Como Foram Resolvidos
 
+- **Testes de modelos** - Realizando testes com múltiplos modelos free tyer para testes no sistema, escolhendo o gemini 3.5-flash como padrão por sua qualidade, tempo de resposta e compatibilidade com tools
+- **Loop entre agente de crédito e entrevista** - O agente de entrevista e crédito estavam entrando em loop chamando um ao outro infinitamente, solucionado fazendo com que o agente de entrevista, só chame o créditonovamente ao fim da entrevista com Score calculado, passando esse contexto para o outro agente.
+- **Segunda chance quando o erro da tool for do agente** - Quando realizando testes com modelos mais fracos, percebi que eles tinham dificuldade de formatar o input no formato da tool, mesmo com formatos detalhados. Solução: Implementação de segunda chance quando erro é input do agente, ao invez de rodar a tool retornando erro, uma validação de input veta inputs com formato errado antes de rodar a tool, retornando um feedback resumido para o agente sobre qual campo está errado e como deve ser formatado, dando uma nova tentativa de request sem que o usuário saiba de nada.
 
 ## Escolhas Técnicas e Justificativas
 
@@ -73,6 +76,13 @@ O acesso aos dados (clientes, faixas de score, solicitações de aumento, log de
 - [Docker](https://www.docker.com/) e Docker Compose, **ou**
 - Python 3.12+ e Node.js 20+ (para rodar back-end e front-end manualmente)
 - Uma chave de API do [Google AI Studio](https://aistudio.google.com/apikey) para o Gemini (gratuita)
+### Rodando os testes
+
+  ```bash
+  cd back-end
+  pytest
+```
+A suíte roda automaticamente em cada pull request via GitHub Actions (.github/workflows/tests.yml).
 
 ### Rodando com Docker
 
