@@ -13,5 +13,6 @@ ERROS_SISTEMA_CSV = DATA_DIR / "erros_sistema.csv"
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_MODEL = os.getenv("GROQ_MODEL")
+GROQ_FALLBACK_MODEL = os.getenv("GROQ_FALLBACK_MODEL")
 
 FRONTEND_URL = os.getenv("FRONTEND_URL")
