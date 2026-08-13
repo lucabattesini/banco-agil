@@ -89,13 +89,21 @@ O acesso aos dados (clientes, faixas de score, solicitações de aumento, log de
    cp back-end/.env.example back-end/.env
    cp front-end/.env.example front-end/.env
    ```
-   Em `back-end/.env`, preencha `GEMINI_API_KEY` com sua chave do Gemini. `GEMINI_MODEL` e `GEMINI_FALLBACK_MODEL` já vêm com valores recomendados (`gemini-3.5-flash` e `gemini-3.5-flash-lite`).
+   Em `back-end/.env`, preencha `GEMINI_API_KEY` com sua chave do Gemini. `GEMINI_MODEL`, `GEMINI_FALLBACK_MODEL`, `FRONTEND_URL` (em `back-end/.env`) e `VITE_API_URL` (em `front-end/.env`) já vêm com valores padrão compatíveis com o `docker-compose.yml` (`http://localhost:5173` e `http://localhost:8000`) — só precisam ser alterados se essas portas já estiverem em uso na sua máquina (veja [Portas já em uso](#portas-já-em-uso-8000--5173) abaixo).
 
 2. Na raiz do repositório:
    ```bash
    docker compose up --build
    ```
 3. Acesse a interface em `http://localhost:5173`. O back-end fica disponível em `http://localhost:8000` (`/docs` para a documentação interativa da API). Os dados de teste (`clientes.csv`, `score_limite.csv`) são gerados automaticamente no primeiro start.
+
+#### Portas já em uso (8000 / 5173)
+
+Se uma dessas portas já estiver ocupada na sua máquina, informe `BACKEND_PORT` e/ou `FRONTEND_PORT` na hora de subir os containers:
+```bash
+BACKEND_PORT=8080 FRONTEND_PORT=5174 docker compose up --build
+```
+O `docker-compose.yml` propaga a mudança para tudo que depende da porta (mapeamento de porta, `VITE_API_URL` do front-end e `FRONTEND_URL`/CORS do back-end) — não precisa editar mais nada nem criar arquivo novo.
 
 ### Rodando manualmente (desenvolvimento)
 
