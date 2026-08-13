@@ -3,7 +3,8 @@ from langgraph.prebuilt import ToolNode, create_react_agent
 
 from app.agents.credit.prompt import build_credit_prompt
 from app.errors import handle_tool_errors
-from app.llm import llm
+from app.agents.llm import llm
+from app.agents.message_history import trim_history
 from app.schemas.state import GraphState
 from app.tools.capture import capture_requested_limit
 from app.tools.credit import get_credit_limit, register_limit_increase_request
@@ -16,7 +17,7 @@ def _credit_prompt(state: GraphState) -> list:
         customer=state["customer"],
         pending_requested_limit=state.get("pending_requested_limit"),
     )
-    return [SystemMessage(content=system), *state["messages"]]
+    return [SystemMessage(content=system), *trim_history(state["messages"])]
 
 
 credit_agent = create_react_agent(

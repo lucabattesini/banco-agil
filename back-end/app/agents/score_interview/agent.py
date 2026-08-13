@@ -3,7 +3,8 @@ from langgraph.prebuilt import ToolNode, create_react_agent
 
 from app.agents.score_interview.prompt import build_score_interview_prompt
 from app.errors import handle_tool_errors
-from app.llm import llm
+from app.agents.llm import llm
+from app.agents.message_history import trim_history
 from app.schemas.state import GraphState
 from app.tools.capture import capture_interview_data
 from app.tools.handoffs import return_to_triage, route_to_credit
@@ -20,7 +21,7 @@ def _score_interview_prompt(state: GraphState) -> list:
         pending_dependents=state.get("pending_dependents"),
         pending_has_debt=state.get("pending_has_debt"),
     )
-    return [SystemMessage(content=system), *state["messages"]]
+    return [SystemMessage(content=system), *trim_history(state["messages"])]
 
 
 score_interview_agent = create_react_agent(

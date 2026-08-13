@@ -3,7 +3,8 @@ from langgraph.prebuilt import ToolNode, create_react_agent
 
 from app.agents.triage.prompt import build_triage_prompt
 from app.errors import handle_tool_errors
-from app.llm import llm
+from app.agents.llm import llm
+from app.agents.message_history import trim_history
 from app.schemas.state import GraphState
 from app.tools.capture import capture_auth_data
 from app.tools.customer import validate_customer
@@ -21,7 +22,7 @@ def _triage_prompt(state: GraphState) -> list:
         pending_cpf=state.get("pending_cpf"),
         pending_birth_date=state.get("pending_birth_date"),
     )
-    return [SystemMessage(content=system), *state["messages"]]
+    return [SystemMessage(content=system), *trim_history(state["messages"])]
 
 
 def _debug_post_model_hook(state: GraphState) -> dict:
