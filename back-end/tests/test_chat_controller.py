@@ -1,8 +1,8 @@
 import asyncio
 
-import groq
 import httpx
 import pytest
+from langchain_google_genai.chat_models import ChatGoogleGenerativeAIError
 
 from app.controllers import chat_controller
 from app.schemas.routes import ChatRequest
@@ -10,14 +10,13 @@ from app.schemas.routes import ChatRequest
 _REQUEST = ChatRequest(message="Oi", session_id="test-session")
 
 
-def _rate_limit_error() -> groq.RateLimitError:
-    request = httpx.Request("POST", "https://api.groq.com")
-    response = httpx.Response(status_code=429, request=request)
-    return groq.RateLimitError("rate limit exceeded", response=response, body=None)
+def _rate_limit_error() -> ChatGoogleGenerativeAIError:
+    return ChatGoogleGenerativeAIError("rate limit exceeded")
 
 
-def _timeout_error() -> groq.APITimeoutError:
-    return groq.APITimeoutError(httpx.Request("POST", "https://api.groq.com"))
+def _timeout_error() -> httpx.TimeoutException:
+    request = httpx.Request("POST", "https://generativelanguage.googleapis.com")
+    return httpx.ReadTimeout("timed out", request=request)
 
 
 def test_returns_busy_message_on_rate_limit_error(monkeypatch):

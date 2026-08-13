@@ -83,13 +83,11 @@ def return_to_triage(
 ) -> Command:
     """Return the conversation to the triage agent because the customer's request is outside your scope.
 
-    Use this whenever the customer asks for something you cannot handle — whether it's completely
-    unrelated to the bank (e.g. "quero fazer um bolo") or a request that belongs to a different agent
-    (e.g. asking about the currency exchange rate while talking to the credit agent, or asking about
-    the credit limit while talking to the exchange agent). If the customer's message also included
-    something within your own scope, handle that part first and only call this for what's left over.
-    The triage agent will figure out where to redirect the customer next, or explain that the request
-    can't be handled.
+    Not currently offered to any agent — every message is routed through triage on every turn instead
+    (see app/graph/builder.py), which is slower per turn but structurally immune to redirect loops. This
+    tool is kept implemented and tested as a future optimization: a specialist could redirect directly
+    without waiting for triage to re-process the next message, saving a model call and some latency, once
+    the conditions for doing so safely (without reintroducing loops) are worked out.
     """
     bouncing_agent = state.get("current_agent")
     already_bounced = bouncing_agent is not None and bouncing_agent == state.get("last_bounced_agent")

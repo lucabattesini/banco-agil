@@ -7,7 +7,6 @@ from app.agents.llm import llm
 from app.agents.message_history import trim_history
 from app.schemas.state import GraphState
 from app.tools.exchange import get_exchange_rate
-from app.tools.handoffs import return_to_triage
 from app.tools.system import end_conversation
 
 
@@ -21,7 +20,6 @@ exchange_agent = create_react_agent(
     tools=ToolNode(
         [
             get_exchange_rate,
-            return_to_triage,
             end_conversation,
         ],
         handle_tool_errors=handle_tool_errors,

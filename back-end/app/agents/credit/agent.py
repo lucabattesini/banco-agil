@@ -7,7 +7,7 @@ from app.agents.llm import llm
 from app.agents.message_history import trim_history
 from app.schemas.state import GraphState
 from app.tools.credit import get_credit_limit, register_limit_increase_request
-from app.tools.handoffs import return_to_triage, route_to_score_interview
+from app.tools.handoffs import route_to_score_interview
 from app.tools.system import end_conversation
 
 
@@ -23,7 +23,6 @@ credit_agent = create_react_agent(
             get_credit_limit,
             register_limit_increase_request,
             route_to_score_interview,
-            return_to_triage,
             end_conversation,
         ],
         handle_tool_errors=handle_tool_errors,
