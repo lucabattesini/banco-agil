@@ -5,18 +5,25 @@ from langchain_core.tools import InjectedToolCallId
 from langgraph.prebuilt import InjectedState
 from langgraph.types import Command
 
+from app.errors import InvalidInputError
 from app.schemas.state import GraphState
+
+_NOT_AUTHENTICATED_YET = (
+    "O cliente ainda não terminou de ser autenticado nesta rodada — espere o resultado de "
+    "`validate_customer` antes de redirecionar."
+)
 
 
 def route_to_credit(
     state: Annotated[GraphState, InjectedState],
     tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> Command:
-    """Transfer the conversation to the credit agent.
+    """Route to the credit agent: limit checks/increases only. Not for score (route_to_score_interview)
+    or exchange rate (route_to_exchange) questions. Call only after validate_customer succeeds — never
+    in the same tool-call batch."""
+    if state.get("customer") is None:
+        raise InvalidInputError(_NOT_AUTHENTICATED_YET)
 
-    Use when the customer wants to check their available credit limit or request a limit increase.
-    Do not use for credit score questions (use route_to_score_interview) or currency rates (use route_to_exchange).
-    """
     return Command(
         goto="credit",
         update={
@@ -32,11 +39,12 @@ def route_to_score_interview(
     state: Annotated[GraphState, InjectedState],
     tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> Command:
-    """Transfer the conversation to the credit score interview agent.
+    """Route to the score interview agent: updating/improving credit score only. Not for credit limit
+    (route_to_credit) or exchange rate (route_to_exchange) questions. Call only after validate_customer
+    succeeds — never in the same tool-call batch."""
+    if state.get("customer") is None:
+        raise InvalidInputError(_NOT_AUTHENTICATED_YET)
 
-    Use when the customer wants to update or improve their credit score.
-    Do not use for credit limit questions (use route_to_credit) or currency rates (use route_to_exchange).
-    """
     return Command(
         goto="score_interview",
         update={
@@ -52,11 +60,12 @@ def route_to_exchange(
     state: Annotated[GraphState, InjectedState],
     tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> Command:
-    """Transfer the conversation to the currency exchange agent.
+    """Route to the exchange agent: currency exchange rate questions only. Not for credit limit
+    (route_to_credit) or score (route_to_score_interview) questions. Call only after validate_customer
+    succeeds — never in the same tool-call batch."""
+    if state.get("customer") is None:
+        raise InvalidInputError(_NOT_AUTHENTICATED_YET)
 
-    Use when the customer wants to check the exchange rate for a currency.
-    Do not use for credit limit questions (use route_to_credit) or score questions (use route_to_score_interview).
-    """
     return Command(
         goto="exchange",
         update={
@@ -77,15 +86,31 @@ def return_to_triage(
     Use this whenever the customer asks for something you cannot handle — whether it's completely
     unrelated to the bank (e.g. "quero fazer um bolo") or a request that belongs to a different agent
     (e.g. asking about the currency exchange rate while talking to the credit agent, or asking about
-    the credit limit while talking to the exchange agent). The triage agent will figure out where to
-    redirect the customer next, or explain that the request can't be handled.
+    the credit limit while talking to the exchange agent). If the customer's message also included
+    something within your own scope, handle that part first and only call this for what's left over.
+    The triage agent will figure out where to redirect the customer next, or explain that the request
+    can't be handled.
     """
+    bouncing_agent = state.get("current_agent")
+    already_bounced = bouncing_agent is not None and bouncing_agent == state.get("last_bounced_agent")
+
+    if already_bounced:
+        content = (
+            f"[REDIRECIONAMENTO BLOQUEADO] Você já tentou redirecionar o cliente para {bouncing_agent} "
+            "nesta interação e não deu certo. Não tente de novo — explique ao cliente, com clareza e "
+            "educadamente, que não é possível ajudá-lo com essa solicitação específica agora, e "
+            "pergunte se há algo mais em que você pode ajudar."
+        )
+    else:
+        content = ""
+
     return Command(
         goto="triage",
         update={
             "current_agent": "triage",
             "customer": state.get("customer"),
-            "messages": [ToolMessage(content="", tool_call_id=tool_call_id)],
+            "last_bounced_agent": bouncing_agent,
+            "messages": [ToolMessage(content=content, tool_call_id=tool_call_id)],
         },
         graph=Command.PARENT,
     )

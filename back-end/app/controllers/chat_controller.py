@@ -11,7 +11,7 @@ logger = logging.getLogger("banco_agil.chat")
 def handle_chat_message(request: ChatRequest) -> ChatResponse:
     try:
         result = graph.invoke(
-            {"messages": [HumanMessage(content=request.message)]},
+            {"messages": [HumanMessage(content=request.message)], "last_bounced_agent": None},
             config={"configurable": {"thread_id": request.session_id}, "recursion_limit": 15},
         )
     except Exception:
