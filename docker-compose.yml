@@ -5,7 +5,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - banco_agil_data:/app/app/data
+      - ./back-end/app/data:/app/app/data
 
   front-end:
     build:
@@ -16,6 +16,3 @@ services:
       - "5173:80"
     depends_on:
       - back-end
-
-volumes:
-  banco_agil_data:
