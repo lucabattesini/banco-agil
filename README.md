@@ -1,12 +1,10 @@
-# Banco Ágil — Atendimento Bancário com Agentes de IA
+# Banco Ágil
 
 Sistema de atendimento ao cliente para um banco digital fictício, construído com múltiplos agentes de IA especializados (Triagem, Crédito, Entrevista de Crédito e Câmbio) orquestrados via LangGraph, com back-end em FastAPI e front-end em React.
 
 ## Visão Geral
 
 O Banco Ágil simula um atendimento bancário completo conduzido por IA: o cliente conversa com um único "atendente" do início ao fim, mas por trás dessa conversa, diferentes agentes especializados assumem o controle conforme a necessidade identificada — autenticação, consulta e aumento de limite de crédito, reavaliação de score, e cotação de câmbio. A transição entre agentes é sempre invisível para o cliente.
-
-O projeto cobre o fluxo completo descrito no desafio: autenticação contra uma base de clientes, registro formal de solicitações de crédito, cálculo de score por fórmula ponderada, consulta de câmbio via API externa real, e tratamento de erros com alternativas e registro técnico — além de infraestrutura de qualidade (testes automatizados, CI, execução via container) que vai além do mínimo pedido.
 
 ## Arquitetura do Sistema
 
@@ -31,7 +29,7 @@ Cada agente é um subgrafo independente (`create_react_agent`), com seu próprio
 
 ### Orquestração e handoffs
 
-Um `StateGraph` pai registra os 4 agentes como nós; a entrada é decidida a cada turno por um roteador condicional que lê o estado (`current_agent`). Handoffs entre agentes acontecem via `Command(graph=Command.PARENT)`, que interrompe o subgrafo do agente atual e transfere o controle para outro nó do grafo pai — sempre passando pela Triagem quando o assunto sai do escopo do agente ativo (com exceção do ciclo Crédito⇄Entrevista de Crédito, que é direto e cíclico, conforme descrito no fluxo do desafio).
+Um `StateGraph` pai registra os 4 agentes como nós; a entrada é decidida a cada turno por um roteador condicional que lê o estado (`current_agent`). Handoffs entre agentes acontecem via `Command(graph=Command.PARENT)`, que interrompe o subgrafo do agente atual e transfere o controle para outro nó do grafo pai, sempre passando pela Triagem quando o assunto sai do escopo do agente ativo (com exceção do ciclo Crédito⇄Entrevista de Crédito, que é direto e cíclico).
 
 ### Estado e dados
 
@@ -70,14 +68,14 @@ O acesso aos dados (clientes, faixas de score, solicitações de aumento, log de
 ## Escolhas Técnicas e Justificativas
 
 - **Entrada direta no agente atual, com uma tool de return_to_triage pra transitar entre agentes quando necessário** — os agentes especialistas têm uma tool pra devolver a conversa à Triagem sempre que o assunto sai do próprio escopo, tornando possível o cliente "viajar" entre Crédito, Entrevista e Câmbio ao longo da mesma conversa, sem que seja necessário dar tools de navegação direta para os agentes especializados, ou que as requisições sempre passem pelo orquestrador. Passar pelo orquestrador em toda chamada não é necessário num sistema deste porte e custaria uma chamada extra ao modelo gastando mais tokens e mais latência, mesmo quando não é necessário identificar contexto.
-- **Redirecionamentos sempre passando pela Triagem** (exceto o ciclo Crédito⇄Entrevista, explícito no desafio) — mantém a regra de que nenhum agente atua fora do próprio escopo, e centraliza a decisão de roteamento em um único lugar.
+- **Redirecionamentos sempre passando pela Triagem** (exceto o ciclo Crédito⇄Entrevista) — mantém a regra de que nenhum agente atua fora do próprio escopo, e centraliza a decisão de roteamento em um único lugar.
 - **Camada de repositórios** entre as tools e os arquivos CSV — isola a lógica de negócio do formato de armazenamento, facilitando uma futura migração para um banco de dados real.
 - **Validação centralizada via tipos Pydantic compartilhados**, em vez de checagens manuais espalhadas pelas tools.
 - **Tratamento de erro em duas categorias com registro técnico em CSV** — atende diretamente o requisito de informar o cliente com clareza, oferecer alternativa quando possível, e registrar o erro para análise posterior.
 - **Captura progressiva de dados avaliada e desativada conscientemente**, mantendo o código-base disponível, porém desativada por decisão de custo, por cada captura intermediária custar uma chamada extra ao modelo, tornando inviável a implementação em um sistema usando modelos com cota free tyer.
 - **Execução via Docker Compose com CI no GitHub Actions** — maior facilidade para rodar o projeto e verificação automática da suíte de testes a cada PR
 - **Front-end em React em vez de Streamlit** — optei por uma interface de chat dedicada em React para uma experiência mais próxima de um atendimento real.
-- **AwesomeAPI para cotação de câmbio**, entre as alternativas sugeridas pelo desafio — escolhida por não exigir chave de API/token reduzindo a chance de falhas ou incoerências em produção, pelo formato simples de requisição e resposta em JSON plano facilitanndo o parsing e pela velocidade de resposta observada nos testes.
+- **AwesomeAPI para cotação de câmbio** — escolhida por não exigir chave de API/token reduzindo a chance de falhas ou incoerências em produção, pelo formato simples de requisição e resposta em JSON plano facilitanndo o parsing e pela velocidade de resposta observada nos testes.
 - **Modelo de linguagem de backup com troca automática e prazo de 40s por requisição** — em vez de só reagir a um erro com uma mensagem, o sistema tenta um segundo modelo automaticamente antes de desistir e, se mesmo após chamar o backup o sistema não retornar uma resposta em 40 segundos, o trabalho é cancelado e uma mensagem automática é enviada ao usuário.
 
 ## Tutorial de Execução e Testes
