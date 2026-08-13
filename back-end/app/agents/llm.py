@@ -7,16 +7,10 @@ from app.config import GEMINI_API_KEY, GEMINI_FALLBACK_MODEL, GEMINI_MODEL
 _PER_CALL_TIMEOUT_SECONDS = 30
 
 _primary = ChatGoogleGenerativeAI(
-    model=GEMINI_MODEL,
-    google_api_key=GEMINI_API_KEY,
-    timeout=_PER_CALL_TIMEOUT_SECONDS,
-    reasoning_effort="low",
+    model=GEMINI_MODEL, google_api_key=GEMINI_API_KEY, timeout=_PER_CALL_TIMEOUT_SECONDS
 )
 _fallback = ChatGoogleGenerativeAI(
-    model=GEMINI_FALLBACK_MODEL,
-    google_api_key=GEMINI_API_KEY,
-    timeout=_PER_CALL_TIMEOUT_SECONDS,
-    reasoning_effort="low",
+    model=GEMINI_FALLBACK_MODEL, google_api_key=GEMINI_API_KEY, timeout=_PER_CALL_TIMEOUT_SECONDS
 )
 
 llm = _primary.with_fallbacks(
