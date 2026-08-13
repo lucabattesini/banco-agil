@@ -27,6 +27,8 @@ Cada agente é um subgrafo independente (`create_react_agent`), com seu próprio
 - **Entrevista de Crédito** — conduz uma entrevista financeira conversacional e recalcula o score do cliente.
 - **Câmbio** — consulta de cotação de moedas em tempo real via API externa.
 
+<img width="1684" height="986" alt="image" src="https://github.com/user-attachments/assets/471b310c-024b-46d5-83cd-ff7d81766abc" />
+
 ### Orquestração e handoffs
 
 Um `StateGraph` pai registra os 4 agentes como nós, com uma entrada condicional: a primeira mensagem da conversa entra pela Triagem; a partir do handoff, cada turno seguinte entra direto no agente que já está atendendo (`current_agent` no estado), sem reprocessar pela Triagem. Handoffs acontecem via `Command(graph=Command.PARENT)`, que transfere o controle para outro nó do grafo pai. O roteamento é de mão única: um especialista nunca devolve o atendimento para a Triagem, exceto o ciclo Crédito⇄Entrevista de Crédito, que é uma continuação direta e intencional do mesmo atendimento (não uma correção de rota).
