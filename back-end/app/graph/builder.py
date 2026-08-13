@@ -7,7 +7,6 @@ from app.agents.score_interview.agent import score_interview_agent
 from app.agents.triage.agent import triage_agent
 from app.schemas.state import GraphState
 
-
 def _entry_router(state: GraphState) -> str:
     return state.get("current_agent") or "triage"
 

@@ -7,7 +7,7 @@ from app.agents.llm import llm
 from app.agents.message_history import trim_history
 from app.schemas.state import GraphState
 from app.tools.customer import validate_customer
-from app.tools.handoffs import route_to_credit, route_to_exchange, route_to_score_interview
+from app.tools.handoffs import route_to_credit, route_to_exchange
 from app.tools.system import end_conversation
 
 
@@ -16,7 +16,10 @@ def _triage_prompt(state: GraphState) -> list:
         f"[DEBUG _triage_prompt] auth_attempts={state.get('auth_attempts', 0)!r} "
         f"pending_cpf={state.get('pending_cpf')!r} pending_birth_date={state.get('pending_birth_date')!r}"
     )
-    system = build_triage_prompt(auth_attempts=state.get("auth_attempts", 0))
+    system = build_triage_prompt(
+        auth_attempts=state.get("auth_attempts", 0),
+        customer=state.get("customer"),
+    )
     return [SystemMessage(content=system), *trim_history(state["messages"])]
 
 
@@ -26,6 +29,7 @@ def _debug_post_model_hook(state: GraphState) -> dict:
         f"[DEBUG post_model_hook] type={type(last).__name__} "
         f"content={getattr(last, 'content', None)!r} "
         f"tool_calls={getattr(last, 'tool_calls', None)!r} "
+        f"usage_metadata={getattr(last, 'usage_metadata', None)!r} "
         f"response_metadata={getattr(last, 'response_metadata', None)!r}"
     )
     return {}
@@ -38,7 +42,6 @@ triage_agent = create_react_agent(
             validate_customer,
             end_conversation,
             route_to_credit,
-            route_to_score_interview,
             route_to_exchange,
         ],
         handle_tool_errors=handle_tool_errors,

@@ -1,14 +1,19 @@
-import groq
-from langchain_groq import ChatGroq
+import httpx
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_google_genai.chat_models import ChatGoogleGenerativeAIError
 
-from app.config import GROQ_API_KEY, GROQ_FALLBACK_MODEL, GROQ_MODEL
+from app.config import GEMINI_API_KEY, GEMINI_FALLBACK_MODEL, GEMINI_MODEL
 
 _PER_CALL_TIMEOUT_SECONDS = 30
 
-_primary = ChatGroq(model=GROQ_MODEL, api_key=GROQ_API_KEY, timeout=_PER_CALL_TIMEOUT_SECONDS)
-_fallback = ChatGroq(model=GROQ_FALLBACK_MODEL, api_key=GROQ_API_KEY, timeout=_PER_CALL_TIMEOUT_SECONDS)
+_primary = ChatGoogleGenerativeAI(
+    model=GEMINI_MODEL, google_api_key=GEMINI_API_KEY, timeout=_PER_CALL_TIMEOUT_SECONDS
+)
+_fallback = ChatGoogleGenerativeAI(
+    model=GEMINI_FALLBACK_MODEL, google_api_key=GEMINI_API_KEY, timeout=_PER_CALL_TIMEOUT_SECONDS
+)
 
 llm = _primary.with_fallbacks(
     [_fallback],
-    exceptions_to_handle=(groq.RateLimitError, groq.APITimeoutError),
+    exceptions_to_handle=(ChatGoogleGenerativeAIError, httpx.TimeoutException),
 )

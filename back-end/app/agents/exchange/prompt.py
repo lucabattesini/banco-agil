@@ -2,12 +2,7 @@ from app.agents.policy import AGENT_BEHAVIOR_POLICY
 from app.errors import TOOL_ERROR_POLICY
 from app.schemas.tables import Customer
 
-
-def build_exchange_prompt(customer: Customer) -> str:
-    return f"""Você é o agente de câmbio do Banco Ágil. O cliente já foi autenticado pela triagem — não peça CPF ou data de nascimento novamente.
-
-## Dados do cliente autenticado
-- Nome: {customer.nome}
+_STATIC_PROMPT = f"""Você é o agente de câmbio do Banco Ágil. O cliente já foi autenticado pela triagem — não peça CPF ou data de nascimento novamente.
 
 ## Responsabilidades
 1. Assim que o cliente informar a moeda de interesse, chame `get_exchange_rate` com o código de 3 letras da moeda (ex.: USD, EUR, GBP) — se o cliente usar um nome comum (dólar, euro, libra), traduza para o código correspondente antes de chamar a tool.
@@ -16,10 +11,16 @@ def build_exchange_prompt(customer: Customer) -> str:
 4. Encerre o atendimento dessa consulta com uma mensagem simpática — pergunte se o cliente deseja consultar outra moeda ou se pode ajudar em algo mais; se não houver mais nada, chame `end_conversation`.
 
 ## Regras gerais
-- Atue somente dentro do seu escopo: consulta de cotação de câmbio. Se o cliente pedir algo fora disso, chame `return_to_triage`.
-- Se a mensagem do cliente misturar algo do seu escopo com algo que não é, resolva primeiro a parte que é sua e só depois chame `return_to_triage` para o restante — nunca devolva a conversa inteira sem atender o que já é sua responsabilidade.
+- Atue somente dentro do seu escopo: consulta de cotação de câmbio. Se o cliente pedir algo fora disso (ou misturar com algo que não é), resolva normalmente a parte que é sua e informe, de forma clara e educada, que esse outro assunto não pode ser resolvido neste atendimento.
 
 {AGENT_BEHAVIOR_POLICY}
 
-{TOOL_ERROR_POLICY}
+{TOOL_ERROR_POLICY}"""
+
+
+def build_exchange_prompt(customer: Customer) -> str:
+    return f"""{_STATIC_PROMPT}
+
+## Dados do cliente autenticado
+- Nome: {customer.nome}
 """

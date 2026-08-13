@@ -13,22 +13,36 @@ _NOT_AUTHENTICATED_YET = (
     "`validate_customer` antes de redirecionar."
 )
 
+_MAX_CREDIT_SCORE_HOPS = 2
+_CREDIT_SCORE_LOOP_BLOCKED = (
+    "[REDIRECIONAMENTO BLOQUEADO] Crédito e Entrevista de Score já se alternaram demais nesta "
+    "rodada e não chegaram a uma conclusão. Não tente redirecionar de novo — explique ao cliente, "
+    "com clareza e educadamente, que não foi possível concluir automaticamente agora, e pergunte "
+    "se há algo mais em que você pode ajudar."
+)
+
 
 def route_to_credit(
     state: Annotated[GraphState, InjectedState],
     tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> Command:
-    """Route to the credit agent: limit checks/increases only. Not for score (route_to_score_interview)
-    or exchange rate (route_to_exchange) questions. Call only after validate_customer succeeds — never
-    in the same tool-call batch."""
+    """Route to the credit agent: limit checks/increases, and score update/improvement requests (the
+    credit agent is the only one that may hand those off to route_to_score_interview). Not for exchange
+    rate (route_to_exchange) questions. Call only after validate_customer succeeds — never in the same
+    tool-call batch."""
     if state.get("customer") is None:
         raise InvalidInputError(_NOT_AUTHENTICATED_YET)
+
+    hops = state.get("credit_score_hops", 0)
+    if hops >= _MAX_CREDIT_SCORE_HOPS:
+        raise InvalidInputError(_CREDIT_SCORE_LOOP_BLOCKED)
 
     return Command(
         goto="credit",
         update={
             "current_agent": "credit",
             "customer": state.get("customer"),
+            "credit_score_hops": hops + 1,
             "messages": [ToolMessage(content="", tool_call_id=tool_call_id)],
         },
         graph=Command.PARENT,
@@ -39,17 +53,22 @@ def route_to_score_interview(
     state: Annotated[GraphState, InjectedState],
     tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> Command:
-    """Route to the score interview agent: updating/improving credit score only. Not for credit limit
-    (route_to_credit) or exchange rate (route_to_exchange) questions. Call only after validate_customer
-    succeeds — never in the same tool-call batch."""
+    """Route to the score interview agent: updating/improving credit score only. Only offered to the
+    credit agent — score requests reach here via route_to_credit first, never directly from triage. Call
+    only after validate_customer succeeds — never in the same tool-call batch."""
     if state.get("customer") is None:
         raise InvalidInputError(_NOT_AUTHENTICATED_YET)
+
+    hops = state.get("credit_score_hops", 0)
+    if hops >= _MAX_CREDIT_SCORE_HOPS:
+        raise InvalidInputError(_CREDIT_SCORE_LOOP_BLOCKED)
 
     return Command(
         goto="score_interview",
         update={
             "current_agent": "score_interview",
             "customer": state.get("customer"),
+            "credit_score_hops": hops + 1,
             "messages": [ToolMessage(content="", tool_call_id=tool_call_id)],
         },
         graph=Command.PARENT,
@@ -83,13 +102,12 @@ def return_to_triage(
 ) -> Command:
     """Return the conversation to the triage agent because the customer's request is outside your scope.
 
-    Use this whenever the customer asks for something you cannot handle — whether it's completely
-    unrelated to the bank (e.g. "quero fazer um bolo") or a request that belongs to a different agent
-    (e.g. asking about the currency exchange rate while talking to the credit agent, or asking about
-    the credit limit while talking to the exchange agent). If the customer's message also included
-    something within your own scope, handle that part first and only call this for what's left over.
-    The triage agent will figure out where to redirect the customer next, or explain that the request
-    can't be handled.
+    Not currently offered to any agent — routing is one-way by design (see app/graph/builder.py's
+    conditional entry on `current_agent`): once triage hands off to a specialist, later turns enter
+    directly at that specialist, and it stays in scope for the rest of the conversation instead of
+    bouncing back. This tool is kept implemented and tested in case a future revision wants a specialist
+    to escape back to triage — that would need `last_bounced_agent` reset logic re-verified against
+    redirect loops before being wired up again.
     """
     bouncing_agent = state.get("current_agent")
     already_bounced = bouncing_agent is not None and bouncing_agent == state.get("last_bounced_agent")

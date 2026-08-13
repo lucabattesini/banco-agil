@@ -46,6 +46,7 @@ def calculate_credit_score(
     return Command(
         update={
             "customer": updated_customer,
+            "score_recalculated": True,
             "messages": [ToolMessage(content=f"Novo score calculado e salvo: {new_score}", tool_call_id=tool_call_id)],
         }
     )
