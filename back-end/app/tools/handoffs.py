@@ -26,9 +26,10 @@ def route_to_credit(
     state: Annotated[GraphState, InjectedState],
     tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> Command:
-    """Route to the credit agent: limit checks/increases only. Not for score (route_to_score_interview)
-    or exchange rate (route_to_exchange) questions. Call only after validate_customer succeeds — never
-    in the same tool-call batch."""
+    """Route to the credit agent: limit checks/increases, and score update/improvement requests (the
+    credit agent is the only one that may hand those off to route_to_score_interview). Not for exchange
+    rate (route_to_exchange) questions. Call only after validate_customer succeeds — never in the same
+    tool-call batch."""
     if state.get("customer") is None:
         raise InvalidInputError(_NOT_AUTHENTICATED_YET)
 
@@ -42,7 +43,6 @@ def route_to_credit(
             "current_agent": "credit",
             "customer": state.get("customer"),
             "credit_score_hops": hops + 1,
-            "score_reassessed": state.get("score_reassessed", False),
             "messages": [ToolMessage(content="", tool_call_id=tool_call_id)],
         },
         graph=Command.PARENT,
@@ -53,9 +53,9 @@ def route_to_score_interview(
     state: Annotated[GraphState, InjectedState],
     tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> Command:
-    """Route to the score interview agent: updating/improving credit score only. Not for credit limit
-    (route_to_credit) or exchange rate (route_to_exchange) questions. Call only after validate_customer
-    succeeds — never in the same tool-call batch."""
+    """Route to the score interview agent: updating/improving credit score only. Only offered to the
+    credit agent — score requests reach here via route_to_credit first, never directly from triage. Call
+    only after validate_customer succeeds — never in the same tool-call batch."""
     if state.get("customer") is None:
         raise InvalidInputError(_NOT_AUTHENTICATED_YET)
 
@@ -102,11 +102,12 @@ def return_to_triage(
 ) -> Command:
     """Return the conversation to the triage agent because the customer's request is outside your scope.
 
-    Not currently offered to any agent — every message is routed through triage on every turn instead
-    (see app/graph/builder.py), which is slower per turn but structurally immune to redirect loops. This
-    tool is kept implemented and tested as a future optimization: a specialist could redirect directly
-    without waiting for triage to re-process the next message, saving a model call and some latency, once
-    the conditions for doing so safely (without reintroducing loops) are worked out.
+    Not currently offered to any agent — routing is one-way by design (see app/graph/builder.py's
+    conditional entry on `current_agent`): once triage hands off to a specialist, later turns enter
+    directly at that specialist, and it stays in scope for the rest of the conversation instead of
+    bouncing back. This tool is kept implemented and tested in case a future revision wants a specialist
+    to escape back to triage — that would need `last_bounced_agent` reset logic re-verified against
+    redirect loops before being wired up again.
     """
     bouncing_agent = state.get("current_agent")
     already_bounced = bouncing_agent is not None and bouncing_agent == state.get("last_bounced_agent")

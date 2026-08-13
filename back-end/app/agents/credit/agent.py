@@ -1,4 +1,4 @@
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import AIMessage, SystemMessage
 from langgraph.prebuilt import ToolNode, create_react_agent
 
 from app.agents.credit.prompt import build_credit_prompt
@@ -13,7 +13,11 @@ from app.tools.system import end_conversation
 
 def _credit_prompt(state: GraphState) -> list:
     print(f"[DEBUG _credit_prompt] credit_score_hops={state.get('credit_score_hops', 0)!r}")
-    system = build_credit_prompt(customer=state["customer"], score_reassessed=state.get("score_reassessed", False))
+    system = build_credit_prompt(
+        customer=state["customer"],
+        score_recalculated=state.get("score_recalculated", False),
+        pending_limit_retry=state.get("pending_limit_retry"),
+    )
     return [SystemMessage(content=system), *trim_history(state["messages"])]
 
 
@@ -25,6 +29,9 @@ def _debug_post_model_hook(state: GraphState) -> dict:
         f"tool_calls={getattr(last, 'tool_calls', None)!r} "
         f"usage_metadata={getattr(last, 'usage_metadata', None)!r}"
     )
+    is_final_text_reply = isinstance(last, AIMessage) and not last.tool_calls
+    if is_final_text_reply and state.get("score_recalculated", False):
+        return {"score_recalculated": False}
     return {}
 
 

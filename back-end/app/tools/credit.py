@@ -54,11 +54,14 @@ def check_score_eligibility(score: int, requested_limit: float) -> dict:
 def register_limit_increase_request(
     cpf: CpfField,
     requested_limit: PositiveAmountField,
+    state: Annotated[GraphState, InjectedState],
     tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> Command:
     """Register a credit limit increase request and resolve it as approved or rejected based on the customer's score.
 
-    This creates a permanent record — only call once, after the customer has clearly stated the desired new limit.
+    This creates a permanent record. Call it once for each distinct request the customer states. Calling it
+    again with the same value after a credit score reassessment is expected and correct, not a duplicate —
+    the score may have changed, so the outcome is re-evaluated fresh each time.
     """
     customer = clientes_repository.find_by_cpf(cpf)
     if customer is None:
@@ -67,7 +70,8 @@ def register_limit_increase_request(
         )
 
     eligibility = check_score_eligibility(customer.score, requested_limit)
-    status = "aprovado" if eligibility["eligible"] else "rejeitado"
+    approved = eligibility["eligible"]
+    status = "aprovado" if approved else "rejeitado"
 
     solicitacoes_repository.create(
         LimitIncreaseRequest(
@@ -81,11 +85,12 @@ def register_limit_increase_request(
 
     return Command(
         update={
+            "pending_limit_retry": None if approved else requested_limit,
             "messages": [
                 ToolMessage(
                     content=f"Solicitação de aumento de limite para {requested_limit} registrada: {status}.",
                     tool_call_id=tool_call_id,
                 )
-            ]
+            ],
         }
     )
