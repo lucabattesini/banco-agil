@@ -1,6 +1,6 @@
 from typing import Optional
 
-from app.agent_policy import AGENT_BEHAVIOR_POLICY
+from app.agents.policy import AGENT_BEHAVIOR_POLICY
 from app.errors import TOOL_ERROR_POLICY
 
 
