@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from langchain_core.messages import ToolMessage
 from langchain_core.tools import InjectedToolCallId
@@ -7,6 +7,7 @@ from langgraph.types import Command
 
 from app.repositories import clientes_repository
 from app.schemas.state import GraphState
+from app.schemas.validators import DependentsField, NonNegativeAmountField
 
 PESO_RENDA = 30
 PESO_EMPREGO = {"formal": 300, "autônomo": 200, "desempregado": 0}
@@ -17,34 +18,22 @@ PESO_DIVIDA_NAO = 100
 
 
 def calculate_credit_score(
+    income: NonNegativeAmountField,
+    employment_type: Literal["formal", "autônomo", "desempregado"],
+    expenses: NonNegativeAmountField,
+    dependents: DependentsField,
+    has_debt: bool,
     state: Annotated[GraphState, InjectedState],
     tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> Command:
     """Calculate the customer's new credit score from the interview answers and persist it.
 
-    Only call once all five interview answers (income, employment type, expenses, dependents, debt) are known.
+    Call once all five interview answers are known: income, employment type, expenses, dependents, debt.
     """
-    required = [
-        state.get("pending_income"),
-        state.get("pending_employment_type"),
-        state.get("pending_expenses"),
-        state.get("pending_dependents"),
-        state.get("pending_has_debt"),
-    ]
-    if any(value is None for value in required):
-        return Command(
-            update={"messages": [ToolMessage(content="Dados da entrevista incompletos.", tool_call_id=tool_call_id)]}
-        )
+    peso_dependentes = PESO_DEPENDENTES.get(dependents, PESO_DEPENDENTES_3_PLUS)
+    peso_divida = PESO_DIVIDA_SIM if has_debt else PESO_DIVIDA_NAO
 
-    peso_dependentes = PESO_DEPENDENTES.get(state["pending_dependents"], PESO_DEPENDENTES_3_PLUS)
-    peso_divida = PESO_DIVIDA_SIM if state["pending_has_debt"] else PESO_DIVIDA_NAO
-
-    score = (
-        (state["pending_income"] / (state["pending_expenses"] + 1)) * PESO_RENDA
-        + PESO_EMPREGO[state["pending_employment_type"]]
-        + peso_dependentes
-        + peso_divida
-    )
+    score = (income / (expenses + 1)) * PESO_RENDA + PESO_EMPREGO[employment_type] + peso_dependentes + peso_divida
     new_score = int(max(0, min(1000, score)))
 
     success = clientes_repository.update_score(state["customer"].cpf, new_score)

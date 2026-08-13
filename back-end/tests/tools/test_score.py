@@ -1,4 +1,6 @@
 import pytest
+from langchain_core.tools import StructuredTool
+from pydantic import ValidationError
 
 from app.schemas.tables import Customer
 from app.tools.score import calculate_credit_score
@@ -6,22 +8,24 @@ from app.tools.score import calculate_credit_score
 _CUSTOMER = Customer(
     cpf="11111111111", nome="Ana Silva", data_nascimento="1990-05-12", score=750, limite_credito=5000.0
 )
+_CALCULATE_CREDIT_SCORE_SCHEMA = StructuredTool.from_function(func=calculate_credit_score).args_schema
+_VALID_KWARGS = {
+    "income": 3000.0,
+    "employment_type": "formal",
+    "expenses": 1000.0,
+    "dependents": 1,
+    "has_debt": False,
+    "state": {"messages": []},
+    "tool_call_id": "test",
+}
 
 
-def test_calculate_credit_score_returns_incomplete_message_when_missing_data(tmp_csvs):
-    state = {
-        "messages": [],
-        "customer": _CUSTOMER,
-        "pending_income": 3000.0,
-        "pending_employment_type": None,
-        "pending_expenses": 1000.0,
-        "pending_dependents": 1,
-        "pending_has_debt": False,
-    }
+@pytest.mark.parametrize("missing_field", ["income", "employment_type", "expenses", "dependents", "has_debt"])
+def test_calculate_credit_score_requires_all_five_interview_fields(missing_field):
+    kwargs = {k: v for k, v in _VALID_KWARGS.items() if k != missing_field}
 
-    command = calculate_credit_score(state=state, tool_call_id="test")
-
-    assert command.update["messages"][0].content == "Dados da entrevista incompletos."
+    with pytest.raises(ValidationError):
+        _CALCULATE_CREDIT_SCORE_SCHEMA(**kwargs)
 
 
 @pytest.mark.parametrize(
@@ -38,17 +42,17 @@ def test_calculate_credit_score_returns_incomplete_message_when_missing_data(tmp
 def test_calculate_credit_score_formula(
     tmp_csvs, income, employment_type, expenses, dependents, has_debt, expected_score
 ):
-    state = {
-        "messages": [],
-        "customer": _CUSTOMER,
-        "pending_income": income,
-        "pending_employment_type": employment_type,
-        "pending_expenses": expenses,
-        "pending_dependents": dependents,
-        "pending_has_debt": has_debt,
-    }
+    state = {"messages": [], "customer": _CUSTOMER}
 
-    command = calculate_credit_score(state=state, tool_call_id="test")
+    command = calculate_credit_score(
+        income=income,
+        employment_type=employment_type,
+        expenses=expenses,
+        dependents=dependents,
+        has_debt=has_debt,
+        state=state,
+        tool_call_id="test",
+    )
 
     assert command.update["customer"].score == expected_score
     assert str(expected_score) in command.update["messages"][0].content

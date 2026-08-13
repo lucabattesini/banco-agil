@@ -6,17 +6,13 @@ from app.errors import handle_tool_errors
 from app.agents.llm import llm
 from app.agents.message_history import trim_history
 from app.schemas.state import GraphState
-from app.tools.capture import capture_requested_limit
 from app.tools.credit import get_credit_limit, register_limit_increase_request
 from app.tools.handoffs import return_to_triage, route_to_score_interview
 from app.tools.system import end_conversation
 
 
 def _credit_prompt(state: GraphState) -> list:
-    system = build_credit_prompt(
-        customer=state["customer"],
-        pending_requested_limit=state.get("pending_requested_limit"),
-    )
+    system = build_credit_prompt(customer=state["customer"])
     return [SystemMessage(content=system), *trim_history(state["messages"])]
 
 
@@ -25,7 +21,6 @@ credit_agent = create_react_agent(
     tools=ToolNode(
         [
             get_credit_limit,
-            capture_requested_limit,
             register_limit_increase_request,
             route_to_score_interview,
             return_to_triage,

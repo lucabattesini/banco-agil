@@ -6,21 +6,13 @@ from app.errors import handle_tool_errors
 from app.agents.llm import llm
 from app.agents.message_history import trim_history
 from app.schemas.state import GraphState
-from app.tools.capture import capture_interview_data
 from app.tools.handoffs import return_to_triage, route_to_credit
 from app.tools.score import calculate_credit_score
 from app.tools.system import end_conversation
 
 
 def _score_interview_prompt(state: GraphState) -> list:
-    system = build_score_interview_prompt(
-        customer=state["customer"],
-        pending_income=state.get("pending_income"),
-        pending_employment_type=state.get("pending_employment_type"),
-        pending_expenses=state.get("pending_expenses"),
-        pending_dependents=state.get("pending_dependents"),
-        pending_has_debt=state.get("pending_has_debt"),
-    )
+    system = build_score_interview_prompt(customer=state["customer"])
     return [SystemMessage(content=system), *trim_history(state["messages"])]
 
 
@@ -28,7 +20,6 @@ score_interview_agent = create_react_agent(
     model=llm,
     tools=ToolNode(
         [
-            capture_interview_data,
             calculate_credit_score,
             route_to_credit,
             return_to_triage,

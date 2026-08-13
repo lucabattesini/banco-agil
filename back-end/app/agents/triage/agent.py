@@ -6,7 +6,6 @@ from app.errors import handle_tool_errors
 from app.agents.llm import llm
 from app.agents.message_history import trim_history
 from app.schemas.state import GraphState
-from app.tools.capture import capture_auth_data
 from app.tools.customer import validate_customer
 from app.tools.handoffs import route_to_credit, route_to_exchange, route_to_score_interview
 from app.tools.system import end_conversation
@@ -17,11 +16,7 @@ def _triage_prompt(state: GraphState) -> list:
         f"[DEBUG _triage_prompt] auth_attempts={state.get('auth_attempts', 0)!r} "
         f"pending_cpf={state.get('pending_cpf')!r} pending_birth_date={state.get('pending_birth_date')!r}"
     )
-    system = build_triage_prompt(
-        auth_attempts=state.get("auth_attempts", 0),
-        pending_cpf=state.get("pending_cpf"),
-        pending_birth_date=state.get("pending_birth_date"),
-    )
+    system = build_triage_prompt(auth_attempts=state.get("auth_attempts", 0))
     return [SystemMessage(content=system), *trim_history(state["messages"])]
 
 
@@ -40,7 +35,6 @@ triage_agent = create_react_agent(
     model=llm,
     tools=ToolNode(
         [
-            capture_auth_data,
             validate_customer,
             end_conversation,
             route_to_credit,
