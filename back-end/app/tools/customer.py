@@ -7,7 +7,7 @@ from langgraph.types import Command
 
 from app.repositories import clientes_repository
 from app.schemas.state import GraphState
-from app.validators import BirthDateField, CpfField
+from app.schemas.validators import BirthDateField, CpfField
 
 
 def validate_customer(

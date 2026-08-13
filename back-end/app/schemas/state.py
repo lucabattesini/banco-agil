@@ -11,6 +11,7 @@ class GraphState(TypedDict):
     customer: NotRequired[Optional[Customer]]
     auth_attempts: NotRequired[int]
     current_agent: NotRequired[str]
+    last_bounced_agent: NotRequired[Optional[str]]
     pending_cpf: NotRequired[Optional[str]]
     pending_birth_date: NotRequired[Optional[str]]
     pending_requested_limit: NotRequired[Optional[float]]

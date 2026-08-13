@@ -23,8 +23,8 @@ TOOL_ALTERNATIVES: dict[str, str] = {
 }
 
 TOOL_ERROR_POLICY = """## Tratamento de erros de ferramentas
-- Se uma tool retornar uma mensagem começando com "[ERRO DE SISTEMA]": não tente a mesma tool de novo nesta rodada. Informe o cliente, sem revelar detalhes técnicos, que há uma instabilidade nessa funcionalidade específica, peça desculpas e sugira tentar novamente mais tarde. Se a mensagem incluir uma sugestão de alternativa, repasse-a ao cliente com suas próprias palavras. Depois disso, continue o atendimento normalmente — pergunte se o cliente deseja tentar mais tarde ou se você pode ajudar em algo mais; não encerre a conversa automaticamente só por causa dessa falha.
-- Se uma tool retornar uma mensagem começando com "[ENTRADA INVÁLIDA]": se o dado incorreto foi você quem formulou (ex. formatação), corrija e tente novamente — no máximo uma vez. Se o dado veio do cliente, explique o problema a ele com clareza e peça a correção."""
+- "[ERRO DE SISTEMA]": não repita a mesma tool. Peça desculpas, explique que há instabilidade (sem detalhes técnicos), repasse qualquer alternativa sugerida, e continue o atendimento normalmente.
+- "[ENTRADA INVÁLIDA]": se o erro foi seu (formatação), corrija e tente de novo (só uma vez). Se foi do cliente, explique e peça a correção."""
 
 
 def _extract_tool_name(e: Exception) -> str:

@@ -11,6 +11,6 @@ router = APIRouter(
 )
 
 @router.post("/", response_model=ChatResponse, status_code=status.HTTP_200_OK)
-def chat(request: ChatRequest) -> JSONResponse:
-    response = handle_chat_message(request)
+async def chat(request: ChatRequest) -> JSONResponse:
+    response = await handle_chat_message(request)
     return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(response))

@@ -1,7 +1,7 @@
 import httpx
 
 from app.errors import InvalidInputError
-from app.validators import CurrencyCodeField
+from app.schemas.validators import CurrencyCodeField
 
 AWESOMEAPI_BASE_URL = "https://economia.awesomeapi.com.br/last"
 
